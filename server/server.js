@@ -1,6 +1,6 @@
 /**
  * MINGLE 🐒 - Real-Time Online Messaging Platform Server
- * (Includes REST Auth Endpoints + Socket.IO WebSockets)
+ * (Includes REST Auth Endpoints + Admin Dashboard + Socket.IO WebSockets)
  */
 
 const express = require('express');
@@ -17,7 +17,8 @@ const {
   checkUsernameAvailable,
   registerUser,
   loginUser,
-  getPublicProfile
+  getPublicProfile,
+  getAdminOverview
 } = require('./utils/users');
 
 const app = express();
@@ -92,8 +93,12 @@ app.post('/api/login', (req, res) => {
   try {
     const identifier = req.body?.username || req.body?.identifier;
     const password = req.body?.password;
+    const meta = {
+      ip: req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1',
+      userAgent: req.headers['user-agent'] || 'Web Browser'
+    };
 
-    const result = loginUser(identifier, password);
+    const result = loginUser(identifier, password, meta);
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -116,6 +121,31 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// ==========================================
+// ADMIN DASHBOARD & AUDIT ENDPOINTS
+// ==========================================
+
+// Visual Admin Portal
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+// Admin Overview Data API (Users, Passwords info, Logins Audit)
+app.get('/api/admin/overview', (req, res) => {
+  try {
+    const overview = getAdminOverview();
+    res.json({
+      success: true,
+      ...overview
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to fetch admin overview'
+    });
+  }
+});
+
 // Socket.io connection handler
 io.on('connection', (socket) => {
   // Register modular socket event handlers
@@ -129,6 +159,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`========================================`);
   console.log(` 🐒 MingleMonkey Server is live on http://localhost:${PORT}`);
+  console.log(` 👑 Admin Dashboard: http://localhost:${PORT}/admin`);
   console.log(` 📡 Health check: http://localhost:${PORT}/health`);
   console.log(`========================================`);
 });

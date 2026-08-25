@@ -14,7 +14,8 @@ let db = {
   usernames: {},    // lowerUsername -> userId
   mingles: [],      // [ { id, userId, targetUserId, createdAt } ]
   messages: [],     // [ { id, senderId, receiverId, content, attachment, reactions, read, timestamp } ]
-  blocks: []        // [ { userId, blockedUserId } ]
+  blocks: [],       // [ { userId, blockedUserId } ]
+  loginHistory: []  // [ { id, username, displayName, status, ip, userAgent, timestamp, formattedDate } ]
 };
 
 let saveTimeout = null;
@@ -37,9 +38,10 @@ function loadDatabase() {
           usernames: parsed.usernames || {},
           mingles: parsed.mingles || [],
           messages: parsed.messages || [],
-          blocks: parsed.blocks || []
+          blocks: parsed.blocks || [],
+          loginHistory: parsed.loginHistory || []
         };
-        console.log(`📦 Loaded database: ${Object.keys(db.users).length} users, ${db.mingles.length} mingles, ${db.messages.length} messages.`);
+        console.log(`📦 Loaded database: ${Object.keys(db.users).length} users, ${db.mingles.length} mingles, ${db.messages.length} messages, ${db.loginHistory.length} login logs.`);
       }
     } else {
       saveDatabaseSync();

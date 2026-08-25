@@ -73,6 +73,8 @@ function registerUser({ username, displayName, password, avatar, bio }) {
     mingleStatus: 'available', // 'available' | 'busy' | 'dnd'
     isOnline: true,
     lastSeen: Date.now(),
+    lastLoginAt: Date.now(),
+    totalLogins: 1,
     privacySettings: {
       showOnlineStatus: true,
       allowSurpriseMingle: true,
@@ -83,13 +85,52 @@ function registerUser({ username, displayName, password, avatar, bio }) {
 
   db.users[id] = newUser;
   db.usernames[norm] = id;
-  scheduleSave();
 
+  // Record audit log
+  recordLoginLog({
+    userId: id,
+    username: norm,
+    displayName: cleanDisplayName,
+    status: 'REGISTERED',
+    ip: '127.0.0.1'
+  });
+
+  scheduleSave();
   return newUser;
 }
 
-function loginUser(identifier, password) {
+function recordLoginLog({ userId, username, displayName, status, ip, userAgent, error }) {
+  if (!db.loginHistory) db.loginHistory = [];
+  const logEntry = {
+    id: uuidv4(),
+    userId: userId || null,
+    username: username || 'unknown',
+    displayName: displayName || username || 'Unknown',
+    status, // 'SUCCESS' | 'FAILED' | 'REGISTERED'
+    error: error || null,
+    ip: ip || '127.0.0.1',
+    userAgent: userAgent || 'Web Browser',
+    timestamp: Date.now(),
+    formattedDate: new Date().toLocaleString()
+  };
+
+  db.loginHistory.unshift(logEntry);
+  if (db.loginHistory.length > 500) {
+    db.loginHistory.length = 500; // retain latest 500 logs
+  }
+  scheduleSave();
+  return logEntry;
+}
+
+function loginUser(identifier, password, meta = {}) {
   if (!identifier) {
+    recordLoginLog({
+      username: 'anonymous',
+      status: 'FAILED',
+      error: 'Empty username',
+      ip: meta.ip,
+      userAgent: meta.userAgent
+    });
     return { success: false, error: 'Please enter a username' };
   }
   const norm = normalizeUsername(identifier);
@@ -102,10 +143,25 @@ function loginUser(identifier, password) {
   }
 
   if (!userId || !db.users[userId]) {
+    recordLoginLog({
+      username: norm,
+      status: 'FAILED',
+      error: 'User does not exist',
+      ip: meta.ip,
+      userAgent: meta.userAgent
+    });
     return { success: false, error: `@${norm} does not exist. Please check your username or create an identity.` };
   }
 
   if (!password || password.trim().length === 0) {
+    recordLoginLog({
+      userId,
+      username: norm,
+      status: 'FAILED',
+      error: 'Missing password',
+      ip: meta.ip,
+      userAgent: meta.userAgent
+    });
     return { success: false, error: 'Please enter your password' };
   }
 
@@ -114,6 +170,15 @@ function loginUser(identifier, password) {
   // If legacy account has no password yet, set and secure it permanently now
   if (!user.passwordHash || !user.passwordSalt) {
     if (password.length < 4) {
+      recordLoginLog({
+        userId,
+        username: norm,
+        displayName: user.displayName,
+        status: 'FAILED',
+        error: 'Password under 4 characters',
+        ip: meta.ip,
+        userAgent: meta.userAgent
+      });
       return { success: false, error: 'Password must be at least 4 characters to secure this account' };
     }
     const { hash, salt } = hashPassword(password);
@@ -123,15 +188,72 @@ function loginUser(identifier, password) {
     // STRICT password check - will reject any incorrect password
     const isValid = verifyPassword(password, user.passwordHash, user.passwordSalt);
     if (!isValid) {
+      recordLoginLog({
+        userId,
+        username: norm,
+        displayName: user.displayName,
+        status: 'FAILED',
+        error: 'Incorrect password entered',
+        ip: meta.ip,
+        userAgent: meta.userAgent
+      });
       return { success: false, error: 'Incorrect password! Access denied.' };
     }
   }
 
   user.isOnline = true;
   user.lastSeen = Date.now();
+  user.lastLoginAt = Date.now();
+  user.totalLogins = (user.totalLogins || 0) + 1;
+
+  // Record successful login in audit trail
+  recordLoginLog({
+    userId,
+    username: user.username,
+    displayName: user.displayName,
+    status: 'SUCCESS',
+    ip: meta.ip,
+    userAgent: meta.userAgent
+  });
+
   scheduleSave();
 
   return { success: true, user };
+}
+
+function getAdminOverview() {
+  const usersList = Object.values(db.users).map(u => ({
+    id: u.id,
+    username: u.username,
+    displayName: u.displayName,
+    avatar: u.avatar,
+    bio: u.bio,
+    passwordHash: u.passwordHash || 'Not Set',
+    passwordSalt: u.passwordSalt || 'Not Set',
+    hasPassword: Boolean(u.passwordHash && u.passwordSalt),
+    createdAt: u.createdAt,
+    createdDate: new Date(u.createdAt).toLocaleString(),
+    lastSeen: u.lastSeen,
+    lastSeenDate: u.lastSeen ? new Date(u.lastSeen).toLocaleString() : 'Never',
+    lastLoginAt: u.lastLoginAt,
+    lastLoginDate: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never',
+    totalLogins: u.totalLogins || 1,
+    isOnline: socketToUser.size > 0 && Array.from(socketToUser.values()).includes(u.id),
+    status: u.status || 'offline',
+    mingleStatus: u.mingleStatus || 'available'
+  }));
+
+  return {
+    stats: {
+      totalUsers: Object.keys(db.users).length,
+      onlineUsers: usersList.filter(u => u.isOnline).length,
+      totalMingles: db.mingles.length,
+      totalMessages: db.messages.length,
+      totalLoginEvents: db.loginHistory ? db.loginHistory.length : 0
+    },
+    users: usersList,
+    loginHistory: db.loginHistory ? db.loginHistory.slice(0, 100) : []
+  };
 }
 
 function bindSocketToUser(socketId, userId) {
@@ -375,5 +497,7 @@ module.exports = {
   getOnlineMinglers,
   updateUserProfile,
   updateUserStatus,
-  getPublicProfile
+  getPublicProfile,
+  getAdminOverview,
+  recordLoginLog
 };

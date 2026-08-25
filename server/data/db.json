@@ -43,7 +43,7 @@
       "status": "online",
       "mingleStatus": "available",
       "isOnline": true,
-      "lastSeen": 1787644494001,
+      "lastSeen": 1787644881923,
       "privacySettings": {
         "showOnlineStatus": true,
         "allowSurpriseMingle": true,
@@ -240,6 +240,63 @@
         "allowMessagesFromNonMingles": true
       },
       "createdAt": 1787644622311
+    },
+    "642196b2-19d9-4ffa-b63a-ae31cd328c95": {
+      "id": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "username": "sai1",
+      "displayName": "saiiii",
+      "passwordHash": "41bcd539005ca496086a2972d7ba2c2f22a9fdea813daf9f287095c774126be303d5ebf5f7af70e270e9f4272c7dadd1fc91e1b8ca1c65defcc55b6623e30df1",
+      "passwordSalt": "190eb6fb9da13e6c4678dd782bd4e01f",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "bio": "Happy to mingle and connect!",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": true,
+      "lastSeen": 1787644686237,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787644686229
+    },
+    "adf175d5-5570-4531-ae9f-66de80aa85e6": {
+      "id": "adf175d5-5570-4531-ae9f-66de80aa85e6",
+      "username": "sanjeevi_9550",
+      "displayName": "Sanjeevi",
+      "passwordHash": "8f33285f7374fa176d5c43a890b113e285423c5cf4d1177510851f367241f45e066fcec7c30a1e150987d42f6e97be0d86acfa7ee6fc8f5de6b06078cacb3986",
+      "passwordSalt": "265a9c787dcdfacdcac90958a683cfe4",
+      "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "bio": "Creator of MINGLE",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787644988801,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787644988618
+    },
+    "78ab8718-b1e4-4125-b816-3e83e273cb5f": {
+      "id": "78ab8718-b1e4-4125-b816-3e83e273cb5f",
+      "username": "alex_9550",
+      "displayName": "Alex",
+      "passwordHash": "21779549f98d4728d0aa79b19c40ef199c3c46c401d092e4bb8bdc0af68e967c8b30eea7f76a4a6197a123f1acda386a16d876bf325f0b3283fa0755a2fb9e0b",
+      "passwordSalt": "bd2b0365ad194f5c38f77fc43e80928b",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=alex_9550",
+      "bio": "Building cool software",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787644988801,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787644988622
     }
   },
   "usernames": {
@@ -255,9 +312,19 @@
     "sanjeevi_9527": "fd25f13a-a88a-46d6-a92b-def2103d374f",
     "alex_9527": "49ed5734-d43f-4988-a72c-81421085f8fb",
     "sanjeevi_9687": "30d1d89b-c12f-4121-bf4b-23ca531eb7f4",
-    "alex_9687": "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1"
+    "alex_9687": "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1",
+    "sai1": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+    "sanjeevi_9550": "adf175d5-5570-4531-ae9f-66de80aa85e6",
+    "alex_9550": "78ab8718-b1e4-4125-b816-3e83e273cb5f"
   },
-  "mingles": [],
+  "mingles": [
+    {
+      "id": "7bb2a238-275e-4865-bb7f-d70884cb8e7e",
+      "userId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "targetUserId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "createdAt": 1787644713061
+    }
+  ],
   "messages": [
     {
       "id": "f4951339-d211-4e0e-9b5a-2e64897b035c",
@@ -342,6 +409,97 @@
       "reactions": {},
       "read": false,
       "timestamp": 1787644622337
+    },
+    {
+      "id": "3fd41762-9e4b-4495-952f-526d50fc61e2",
+      "type": "text",
+      "senderId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "senderUsername": "sai",
+      "senderDisplayName": "sai",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "receiverId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "content": "hi",
+      "attachment": null,
+      "reactions": {},
+      "read": true,
+      "timestamp": 1787644723871
+    },
+    {
+      "id": "c481a14c-ca6a-45a2-8119-35146185e514",
+      "type": "text",
+      "senderId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "senderUsername": "sai1",
+      "senderDisplayName": "saiiii",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "receiverId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "content": "hi",
+      "attachment": null,
+      "reactions": {},
+      "read": true,
+      "timestamp": 1787644745486
+    },
+    {
+      "id": "49742971-2f85-4488-9eec-b199a8f4b24e",
+      "type": "text",
+      "senderId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "senderUsername": "sai",
+      "senderDisplayName": "sai",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "receiverId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "content": "what are doing",
+      "attachment": null,
+      "reactions": {},
+      "read": true,
+      "timestamp": 1787644755729
+    },
+    {
+      "id": "2ce093f6-b2ba-40fc-af75-c23c37231fd7",
+      "type": "text",
+      "senderId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "senderUsername": "sai1",
+      "senderDisplayName": "saiiii",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "receiverId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "content": "chatting with u",
+      "attachment": null,
+      "reactions": {
+        "🔥": [
+          "sai"
+        ],
+        "👍": [
+          "sai"
+        ]
+      },
+      "read": true,
+      "timestamp": 1787644773501
+    },
+    {
+      "id": "05ed338e-c16a-47d1-bfc1-134298450991",
+      "type": "text",
+      "senderId": "d3b8ce13-067d-4c98-b13f-5b99fefe5796",
+      "senderUsername": "sai",
+      "senderDisplayName": "sai",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Sanjeevi",
+      "receiverId": "642196b2-19d9-4ffa-b63a-ae31cd328c95",
+      "content": "love u",
+      "attachment": null,
+      "reactions": {},
+      "read": true,
+      "timestamp": 1787644789042
+    },
+    {
+      "id": "225c61a1-c769-4191-9fe4-7ec5a0047de6",
+      "type": "text",
+      "senderId": "adf175d5-5570-4531-ae9f-66de80aa85e6",
+      "senderUsername": "sanjeevi_9550",
+      "senderDisplayName": "Sanjeevi",
+      "senderAvatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "receiverId": "78ab8718-b1e4-4125-b816-3e83e273cb5f",
+      "content": "Hey Alex! Glad we mingled.",
+      "attachment": null,
+      "reactions": {},
+      "read": false,
+      "timestamp": 1787644988648
     }
   ],
   "blocks": []

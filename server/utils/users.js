@@ -20,7 +20,7 @@ function hashPassword(password, salt) {
 }
 
 function verifyPassword(password, storedHash, storedSalt) {
-  if (!storedHash || !storedSalt) return true; // backward compatibility for accounts created without pwd
+  if (!storedHash || !storedSalt || !password) return false;
   const { hash } = hashPassword(password, storedSalt);
   return hash === storedHash;
 }
@@ -102,19 +102,28 @@ function loginUser(identifier, password) {
   }
 
   if (!userId || !db.users[userId]) {
-    return { success: false, error: `@${norm} does not exist. Please check your username or register.` };
+    return { success: false, error: `@${norm} does not exist. Please check your username or create an identity.` };
+  }
+
+  if (!password || password.trim().length === 0) {
+    return { success: false, error: 'Please enter your password' };
   }
 
   const user = db.users[userId];
 
-  // If user has password, verify it
-  if (user.passwordHash && user.passwordSalt) {
-    if (!password) {
-      return { success: false, error: 'Please enter your password' };
+  // If legacy account has no password yet, set and secure it permanently now
+  if (!user.passwordHash || !user.passwordSalt) {
+    if (password.length < 4) {
+      return { success: false, error: 'Password must be at least 4 characters to secure this account' };
     }
+    const { hash, salt } = hashPassword(password);
+    user.passwordHash = hash;
+    user.passwordSalt = salt;
+  } else {
+    // STRICT password check - will reject any incorrect password
     const isValid = verifyPassword(password, user.passwordHash, user.passwordSalt);
     if (!isValid) {
-      return { success: false, error: 'Incorrect password. Please try again.' };
+      return { success: false, error: 'Incorrect password! Access denied.' };
     }
   }
 

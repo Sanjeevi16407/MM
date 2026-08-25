@@ -350,7 +350,8 @@ function showToast(message, type = 'info') {
 // 5. SESSION & IDENTITY SETUP
 function showAuthModal(tab = 'register') {
   DOM.authModal.classList.remove('hidden');
-  DOM.authModal.style.display = 'flex';
+  DOM.authModal.classList.add('flex');
+  DOM.authModal.style.setProperty('display', 'flex', 'important');
   if (tab === 'login') {
     DOM.authTabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-white btn-coral shadow-sm';
     DOM.authTabRegister.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
@@ -368,7 +369,8 @@ function showAuthModal(tab = 'register') {
 
 function hideAuthModal() {
   DOM.authModal.classList.add('hidden');
-  DOM.authModal.style.display = 'none';
+  DOM.authModal.classList.remove('flex');
+  DOM.authModal.style.setProperty('display', 'none', 'important');
 }
 
 function checkExistingSession() {
@@ -409,6 +411,7 @@ function setCurrentUser(user) {
   if (!user) return;
   state.currentUser = user;
   localStorage.setItem('mingle_user', JSON.stringify(user));
+  hideAuthModal();
 
   // Update Top Bar & Footers & Mobile Nav
   if (DOM.headerAvatar) DOM.headerAvatar.src = user.avatar;
@@ -422,7 +425,8 @@ function setCurrentUser(user) {
 
   if (DOM.userMingleStatusSelect) DOM.userMingleStatusSelect.value = user.mingleStatus || 'available';
 
-  // Load Initial Hub
+  // Switch to home & load data
+  switchSection('home');
   loadHomeData();
   refreshThreads();
 }
@@ -1334,7 +1338,7 @@ function setupEventListeners() {
     }
 
     // Set Button Loading State
-    if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Creating Profile...';
+    if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Entering Mingle...';
     if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = true;
 
     // Guaranteed local profile creation fallback
@@ -1352,12 +1356,17 @@ function setupEventListeners() {
       createdAt: Date.now()
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, displayName, password, avatar, bio })
+        body: JSON.stringify({ username, displayName, password, avatar, bio }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const res = await response.json();
 
@@ -1369,7 +1378,6 @@ function setupEventListeners() {
         if (state.socket && state.socket.connected) {
           state.socket.emit('user:restore_session', { userId: res.user.id, sessionToken: res.user.sessionToken });
         }
-        hideAuthModal();
         showToast(`🎉 Welcome to Mingle, ${res.user.displayName}!`, 'success');
         return;
       } else if (res?.error && res.error.toLowerCase().includes('already taken')) {
@@ -1386,7 +1394,6 @@ function setupEventListeners() {
             if (state.socket && state.socket.connected) {
               state.socket.emit('user:restore_session', { userId: loginRes.user.id, sessionToken: loginRes.user.sessionToken });
             }
-            hideAuthModal();
             showToast(`Welcome back, ${loginRes.user.displayName}!`, 'success');
             return;
           }
@@ -1402,7 +1409,7 @@ function setupEventListeners() {
         return;
       }
     } catch (err) {
-      // Backend not running or different network — proceed with local profile
+      clearTimeout(timeoutId);
     }
 
     if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Create Profile';
@@ -1410,7 +1417,6 @@ function setupEventListeners() {
 
     // Set local profile and let user in immediately!
     setCurrentUser(localProfile);
-    hideAuthModal();
     showToast(`🎉 Welcome to Mingle, ${localProfile.displayName}!`, 'success');
   });
 

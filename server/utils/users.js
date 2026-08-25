@@ -69,7 +69,7 @@ function registerUser({ username, displayName, password, avatar, bio }) {
     passwordHash: hash,
     passwordSalt: salt,
     sessionToken,
-    avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${norm}`,
+    avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${norm}`,
     bio: (bio && bio.trim()) || 'Happy to mingle and connect!',
     status: 'online', // 'online' | 'away' | 'busy' | 'offline'
     mingleStatus: 'available', // 'available' | 'busy' | 'dnd'

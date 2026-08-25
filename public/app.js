@@ -430,13 +430,13 @@ function setCurrentUser(user) {
 function setupAvatarPicker() {
   DOM.registerAvatarList.innerHTML = '';
   state.avatarSeeds.forEach((seed, idx) => {
-    const url = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+    const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `w-10 h-10 rounded-xl p-0.5 border-2 transition overflow-hidden ${
-      idx === 0 && !state.customAvatarDataUrl ? 'border-amber-400 scale-105 ring-2 ring-amber-500/30' : 'border-transparent opacity-60 hover:opacity-100'
+      idx === 0 && !state.customAvatarDataUrl ? 'border-[#FF5A5F] scale-105 ring-2 ring-[#FF5A5F]/30' : 'border-transparent opacity-60 hover:opacity-100'
     }`;
-    btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-lg bg-slate-800">`;
+    btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-lg bg-gray-100">`;
     btn.onclick = () => {
       state.selectedAvatarSeed = seed;
       state.customAvatarDataUrl = null;
@@ -444,17 +444,17 @@ function setupAvatarPicker() {
       document.querySelectorAll('#registerAvatarList button').forEach(b => {
         b.className = 'w-10 h-10 rounded-xl p-0.5 border-2 border-transparent opacity-60 hover:opacity-100 transition overflow-hidden';
       });
-      btn.className = 'w-10 h-10 rounded-xl p-0.5 border-2 border-amber-400 scale-105 ring-2 ring-amber-500/30 transition overflow-hidden';
+      btn.className = 'w-10 h-10 rounded-xl p-0.5 border-2 border-[#FF5A5F] scale-105 ring-2 ring-[#FF5A5F]/30 transition overflow-hidden';
     };
     DOM.registerAvatarList.appendChild(btn);
   });
 }
 
 function randomizeAvatars() {
-  state.avatarSeeds = state.avatarSeeds.map(() => 'Monkey_' + Math.floor(Math.random() * 99999));
+  state.avatarSeeds = ['Aarav', 'Priya', 'Rohan', 'Ananya', 'Kabir', 'Diya', 'Arjun', 'Meera', 'Vikram', 'Neha'].sort(() => Math.random() - 0.5);
   state.selectedAvatarSeed = state.avatarSeeds[0];
   state.customAvatarDataUrl = null;
-  DOM.regPhotoPreview.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
+  DOM.regPhotoPreview.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${state.selectedAvatarSeed}`;
   setupAvatarPicker();
 }
 
@@ -678,7 +678,7 @@ function renderMobileStories(mingles) {
   if (!DOM.mobileStoriesReel) return;
   DOM.mobileStoriesReel.innerHTML = '';
 
-  // 1. My profile / surprise quick bubble
+  // 1. Surprise quick bubble
   const surpriseBubble = document.createElement('div');
   surpriseBubble.className = 'story-bubble';
   surpriseBubble.onclick = () => switchSection('surprise');
@@ -694,89 +694,103 @@ function renderMobileStories(mingles) {
   `;
   DOM.mobileStoriesReel.appendChild(surpriseBubble);
 
-  // Default suggested Indian profiles for rich stories if mingles is empty
-  const defaultStories = [
-    { name: 'Priya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Priya', online: true },
-    { name: 'Aarav', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aarav', online: true },
-    { name: 'Ananya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ananya', online: true },
-    { name: 'Rohan', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Rohan', online: true },
-    { name: 'Diya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Diya', online: false },
-    { name: 'Kabir', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kabir', online: true }
-  ];
-
-  const storiesToRender = (mingles && mingles.length > 0) ? mingles : defaultStories;
-
-  storiesToRender.forEach(u => {
-    const bubble = document.createElement('div');
-    bubble.className = 'story-bubble';
-    if (u.id) {
-      bubble.onclick = () => openChatWithUser(u.id);
-    } else {
-      bubble.onclick = () => switchSection('discover');
-    }
-    bubble.innerHTML = `
-      <div class="story-ring-wrapper">
-        <div class="story-ring-inner">
-          <div class="relative">
-            <img src="${u.avatar}" class="w-14 h-14 rounded-full object-cover">
-            <span class="status-indicator ${u.online !== false ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
-          </div>
+  // Discover bubble
+  const discoverBubble = document.createElement('div');
+  discoverBubble.className = 'story-bubble';
+  discoverBubble.onclick = () => switchSection('discover');
+  discoverBubble.innerHTML = `
+    <div class="story-ring-wrapper">
+      <div class="story-ring-inner">
+        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-lg hover:bg-gray-200 transition">
+          <i data-lucide="compass" class="w-6 h-6 text-gray-700"></i>
         </div>
       </div>
-      <span class="text-[11px] font-semibold text-gray-700 truncate max-w-[66px] mt-1 text-center">${escapeHtml((u.displayName || u.name || 'User').split(' ')[0])}</span>
-    `;
-    DOM.mobileStoriesReel.appendChild(bubble);
-  });
+    </div>
+    <span class="text-[11px] font-semibold text-gray-700 truncate max-w-[66px] mt-1 text-center">Discover</span>
+  `;
+  DOM.mobileStoriesReel.appendChild(discoverBubble);
+
+  // Render ONLY real online mingled connections
+  if (mingles && mingles.length > 0) {
+    mingles.forEach(u => {
+      const bubble = document.createElement('div');
+      bubble.className = 'story-bubble';
+      bubble.onclick = () => openChatWithUser(u.id);
+      bubble.innerHTML = `
+        <div class="story-ring-wrapper">
+          <div class="story-ring-inner">
+            <div class="relative">
+              <img src="${u.avatar}" class="w-14 h-14 rounded-full object-cover">
+              <span class="status-indicator ${u.isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
+            </div>
+          </div>
+        </div>
+        <span class="text-[11px] font-semibold text-gray-700 truncate max-w-[66px] mt-1 text-center">${escapeHtml((u.displayName || u.username).split(' ')[0])}</span>
+      `;
+      DOM.mobileStoriesReel.appendChild(bubble);
+    });
+  }
+  lucide.createIcons();
 }
 
 function renderHomeOnlineMingles(mingles) {
   DOM.homeOnlineMinglesGrid.innerHTML = '';
   
-  // Suggested curated people if real user has no connections yet
-  const suggestedPeople = [
-    { name: 'Priya Patel', username: 'priya_design', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Priya', bio: 'Product Designer • UI/UX • Coffee enthusiast ☕', tag: '#Design', online: true },
-    { name: 'Aarav Sharma', username: 'aarav_builds', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aarav', bio: 'Building indie web tools & AI agents 🚀', tag: '#Tech', online: true },
-    { name: 'Ananya Iyer', username: 'ananya_creates', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ananya', bio: 'Content creator • Music & books lover 🎧', tag: '#Creative', online: true },
-    { name: 'Rohan Verma', username: 'rohan_v', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Rohan', bio: 'Full-stack dev & Bangalore tech organizer 💻', tag: '#Startups', online: true },
-    { name: 'Kabir Mehta', username: 'kabir_m', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kabir', bio: 'Photographer • Road trips & photography 📷', tag: '#Photo', online: false },
-    { name: 'Diya Sen', username: 'diya_s', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Diya', bio: 'Architecture & sustainable living advocate 🌿', tag: '#Lifestyle', online: true }
-  ];
+  // If no real connections online, show clean inviting empty state
+  if (!mingles || mingles.length === 0) {
+    DOM.homeOnlineMinglesGrid.innerHTML = `
+      <div class="col-span-full py-10 text-center bg-white rounded-3xl border border-gray-200 p-8 shadow-sm">
+        <div class="w-12 h-12 rounded-full bg-rose-50 text-[#FF5A5F] flex items-center justify-center text-xl mx-auto mb-3">
+          ✨
+        </div>
+        <h4 class="text-sm font-bold text-gray-900 mb-1">No connections online right now</h4>
+        <p class="text-xs text-gray-500 max-w-sm mx-auto mb-4">Connect with real people on your network or start a Surprise Mingle to chat live!</p>
+        <div class="flex items-center justify-center gap-2">
+          <button onclick="switchSection('discover')" class="py-2 px-4 btn-coral text-white text-xs font-bold rounded-xl shadow transition">
+            Explore Discover
+          </button>
+          <button onclick="switchSection('surprise')" class="py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition">
+            Surprise Mingle 🎲
+          </button>
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
 
-  const people = (mingles && mingles.length > 0) ? mingles : suggestedPeople;
-
-  people.forEach(user => {
+  // Render real connected users
+  mingles.forEach(user => {
     const card = document.createElement('div');
     card.className = 'suggested-card p-5 flex flex-col justify-between space-y-4';
-    const isRealUser = !!user.id;
-    const isOnline = user.isOnline ?? user.online ?? true;
-    const displayName = user.displayName || user.name;
+    const isOnline = user.isOnline ?? true;
+    const displayName = user.displayName || user.username;
     const username = user.username;
     const bio = user.bio || 'Happy to connect and chat!';
-    const tag = user.tag || '#Community';
 
     card.innerHTML = `
       <div>
         <div class="flex items-start justify-between">
-          <div class="relative cursor-pointer" onclick="${isRealUser ? `openProfileDrawer('${user.id}')` : `switchSection('discover')`}">
+          <div class="relative cursor-pointer" onclick="openProfileDrawer('${user.id}')">
             <img src="${user.avatar}" class="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-200 object-cover">
             <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
           </div>
-          <span class="text-[10px] font-bold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">${tag}</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full">Connected</span>
         </div>
         <div class="mt-3">
-          <h4 class="text-sm font-bold text-gray-900 truncate hover:text-[#FF5A5F] cursor-pointer" onclick="${isRealUser ? `openProfileDrawer('${user.id}')` : `switchSection('discover')`}">${escapeHtml(displayName)}</h4>
+          <h4 class="text-sm font-bold text-gray-900 truncate hover:text-[#FF5A5F] cursor-pointer" onclick="openProfileDrawer('${user.id}')">${escapeHtml(displayName)}</h4>
           <p class="text-xs font-medium text-gray-400 font-mono">@${username}</p>
           <p class="text-xs text-gray-600 mt-2 leading-relaxed line-clamp-2">${escapeHtml(bio)}</p>
         </div>
       </div>
 
       <div class="pt-3 border-t border-gray-100 flex items-center gap-2">
-        <button onclick="${isRealUser ? `handleMingleToggle('${user.id}', ${user.isMingled})` : `switchSection('discover')`}" class="flex-1 py-2 px-3 btn-coral text-xs font-bold rounded-xl flex items-center justify-center gap-1">
-          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-          <span>${user.isMingled ? 'Connected' : 'Connect'}</span>
+        <button onclick="openChatWithUser('${user.id}')" class="flex-1 py-2 px-3 btn-coral text-xs font-bold rounded-xl flex items-center justify-center gap-1">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          <span>Message</span>
         </button>
-        <button onclick="${isRealUser ? `openChatWithUser('${user.id}')` : `switchSection('discover')`}" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition">
-          Message
+        <button onclick="openProfileDrawer('${user.id}')" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition">
+          View Profile
         </button>
       </div>
     `;
@@ -1287,7 +1301,7 @@ function setupEventListeners() {
     const displayName = DOM.regDisplayNameInput.value.trim() || username;
     const password = DOM.regPasswordInput.value;
     const bio = DOM.regBioInput.value.trim();
-    const avatar = state.customAvatarDataUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
+    const avatar = state.customAvatarDataUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${state.selectedAvatarSeed}`;
 
     if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
 
@@ -1434,7 +1448,7 @@ function setupEventListeners() {
         id: 'user_' + Math.random().toString(36).substring(2, 9),
         username,
         displayName: username,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
         bio: 'Ready to chat & mingle!',
         status: 'online',
         mingleStatus: 'available',

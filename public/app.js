@@ -95,8 +95,8 @@ const state = {
   typingTimer: null,
   usernameCheckTimer: null,
   topSearchTimer: null,
-  avatarSeeds: ['Sanjeevi', 'Alex', 'Sarah', 'Koko', 'Leo', 'Milo'],
-  selectedAvatarSeed: 'Sanjeevi'
+  avatarSeeds: ['Monkey_1', 'Monkey_2', 'Monkey_3', 'Monkey_4', 'Monkey_5', 'Monkey_6'],
+  selectedAvatarSeed: 'Monkey_1'
 };
 
 // 3. DOM ELEMENTS

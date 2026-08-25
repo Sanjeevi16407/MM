@@ -90,6 +90,8 @@ const state = {
   threads: [],
   unreadTotal: 0,
   attachedFile: null,
+  customAvatarDataUrl: null,
+  settingsAvatarDataUrl: null,
   typingTimer: null,
   usernameCheckTimer: null,
   topSearchTimer: null,
@@ -107,14 +109,26 @@ const DOM = {
   authTabLogin: document.getElementById('authTabLogin'),
   registerForm: document.getElementById('registerForm'),
   loginForm: document.getElementById('loginForm'),
+  regAvatarPreviewContainer: document.getElementById('regAvatarPreviewContainer'),
+  regPhotoPreview: document.getElementById('regPhotoPreview'),
+  regPhotoUploadInput: document.getElementById('regPhotoUploadInput'),
+  regUploadPhotoBtn: document.getElementById('regUploadPhotoBtn'),
+  toggleAvatarsListBtn: document.getElementById('toggleAvatarsListBtn'),
+  collapsibleAvatarSection: document.getElementById('collapsibleAvatarSection'),
   registerAvatarList: document.getElementById('registerAvatarList'),
   randomizeAvatarsBtn: document.getElementById('randomizeAvatarsBtn'),
   regUsernameInput: document.getElementById('regUsernameInput'),
   regDisplayNameInput: document.getElementById('regDisplayNameInput'),
+  regPasswordInput: document.getElementById('regPasswordInput'),
+  toggleRegPasswordBtn: document.getElementById('toggleRegPasswordBtn'),
+  regPasswordEyeIcon: document.getElementById('regPasswordEyeIcon'),
   regBioInput: document.getElementById('regBioInput'),
   usernameCheckIcon: document.getElementById('usernameCheckIcon'),
   usernameFeedback: document.getElementById('usernameFeedback'),
   loginUsernameInput: document.getElementById('loginUsernameInput'),
+  loginPasswordInput: document.getElementById('loginPasswordInput'),
+  toggleLoginPasswordBtn: document.getElementById('toggleLoginPasswordBtn'),
+  loginPasswordEyeIcon: document.getElementById('loginPasswordEyeIcon'),
   loginErrorMsg: document.getElementById('loginErrorMsg'),
 
   // Top Header
@@ -242,6 +256,10 @@ const DOM = {
   profileSettingsModal: document.getElementById('profileSettingsModal'),
   closeSettingsModalBtn: document.getElementById('closeSettingsModalBtn'),
   updateProfileForm: document.getElementById('updateProfileForm'),
+  settingsPhotoContainer: document.getElementById('settingsPhotoContainer'),
+  settingsPhotoPreview: document.getElementById('settingsPhotoPreview'),
+  settingsPhotoUploadInput: document.getElementById('settingsPhotoUploadInput'),
+  settingsUploadPhotoBtn: document.getElementById('settingsUploadPhotoBtn'),
   settingsModalUsername: document.getElementById('settingsModalUsername'),
   settingsDisplayNameInput: document.getElementById('settingsDisplayNameInput'),
   settingsBioInput: document.getElementById('settingsBioInput'),
@@ -338,16 +356,18 @@ function setupAvatarPicker() {
     const url = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `w-11 h-11 rounded-2xl p-0.5 border-2 transition overflow-hidden ${
-      idx === 0 ? 'border-amber-400 scale-105 ring-2 ring-amber-500/30' : 'border-transparent opacity-60 hover:opacity-100'
+    btn.className = `w-10 h-10 rounded-xl p-0.5 border-2 transition overflow-hidden ${
+      idx === 0 && !state.customAvatarDataUrl ? 'border-amber-400 scale-105 ring-2 ring-amber-500/30' : 'border-transparent opacity-60 hover:opacity-100'
     }`;
-    btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-xl bg-slate-800">`;
+    btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-lg bg-slate-800">`;
     btn.onclick = () => {
       state.selectedAvatarSeed = seed;
+      state.customAvatarDataUrl = null;
+      DOM.regPhotoPreview.src = url;
       document.querySelectorAll('#registerAvatarList button').forEach(b => {
-        b.className = 'w-11 h-11 rounded-2xl p-0.5 border-2 border-transparent opacity-60 hover:opacity-100 transition overflow-hidden';
+        b.className = 'w-10 h-10 rounded-xl p-0.5 border-2 border-transparent opacity-60 hover:opacity-100 transition overflow-hidden';
       });
-      btn.className = 'w-11 h-11 rounded-2xl p-0.5 border-2 border-amber-400 scale-105 ring-2 ring-amber-500/30 transition overflow-hidden';
+      btn.className = 'w-10 h-10 rounded-xl p-0.5 border-2 border-amber-400 scale-105 ring-2 ring-amber-500/30 transition overflow-hidden';
     };
     DOM.registerAvatarList.appendChild(btn);
   });
@@ -356,6 +376,8 @@ function setupAvatarPicker() {
 function randomizeAvatars() {
   state.avatarSeeds = state.avatarSeeds.map(() => 'Monkey_' + Math.floor(Math.random() * 99999));
   state.selectedAvatarSeed = state.avatarSeeds[0];
+  state.customAvatarDataUrl = null;
+  DOM.regPhotoPreview.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
   setupAvatarPicker();
 }
 
@@ -1016,15 +1038,73 @@ function setupEventListeners() {
     }, 250);
   });
 
+  // Profile Photo Upload Handlers
+  if (DOM.regAvatarPreviewContainer) {
+    DOM.regAvatarPreviewContainer.addEventListener('click', () => DOM.regPhotoUploadInput.click());
+  }
+  if (DOM.regUploadPhotoBtn) {
+    DOM.regUploadPhotoBtn.addEventListener('click', () => DOM.regPhotoUploadInput.click());
+  }
+
+  if (DOM.regPhotoUploadInput) {
+    DOM.regPhotoUploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Profile photo must be less than 5MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        state.customAvatarDataUrl = ev.target.result;
+        DOM.regPhotoPreview.src = ev.target.result;
+        showToast('Profile photo selected! 📷', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (DOM.toggleAvatarsListBtn) {
+    DOM.toggleAvatarsListBtn.addEventListener('click', () => {
+      DOM.collapsibleAvatarSection.classList.toggle('hidden');
+    });
+  }
+
+  // Password Visibility Toggles
+  if (DOM.toggleRegPasswordBtn) {
+    DOM.toggleRegPasswordBtn.addEventListener('click', () => {
+      const isPwd = DOM.regPasswordInput.type === 'password';
+      DOM.regPasswordInput.type = isPwd ? 'text' : 'password';
+      DOM.regPasswordEyeIcon.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+  }
+
+  if (DOM.toggleLoginPasswordBtn) {
+    DOM.toggleLoginPasswordBtn.addEventListener('click', () => {
+      const isPwd = DOM.loginPasswordInput.type === 'password';
+      DOM.loginPasswordInput.type = isPwd ? 'text' : 'password';
+      DOM.loginPasswordEyeIcon.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+  }
+
   // Register Identity Form Submit
   DOM.registerForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = DOM.regUsernameInput.value.trim().replace(/^@/, '');
     const displayName = DOM.regDisplayNameInput.value.trim();
+    const password = DOM.regPasswordInput.value;
     const bio = DOM.regBioInput.value.trim();
-    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
+    const avatar = state.customAvatarDataUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
 
-    state.socket.emit('user:register', { username, displayName, avatar, bio }, (res) => {
+    if (!password || password.length < 4) {
+      DOM.usernameFeedback.textContent = 'Password must be at least 4 characters';
+      DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
+      return;
+    }
+
+    state.socket.emit('user:register', { username, displayName, password, avatar, bio }, (res) => {
       if (res?.success) {
         setCurrentUser(res.user);
         DOM.authModal.classList.add('hidden');
@@ -1040,13 +1120,17 @@ function setupEventListeners() {
   DOM.loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = DOM.loginUsernameInput.value.trim().replace(/^@/, '');
-    state.socket.emit('user:login', username, (res) => {
+    const password = DOM.loginPasswordInput.value;
+
+    DOM.loginErrorMsg.classList.add('hidden');
+
+    state.socket.emit('user:login', { username, password }, (res) => {
       if (res?.success) {
         setCurrentUser(res.user);
         DOM.authModal.classList.add('hidden');
         showToast(`Welcome back, ${res.user.displayName}!`, 'success');
       } else {
-        DOM.loginErrorMsg.textContent = res?.error || 'Username not found';
+        DOM.loginErrorMsg.textContent = res?.error || 'Login failed';
         DOM.loginErrorMsg.classList.remove('hidden');
       }
     });
@@ -1249,21 +1333,48 @@ function setupEventListeners() {
   DOM.profileSettingsBtn.addEventListener('click', openSettingsModal);
   DOM.closeSettingsModalBtn.addEventListener('click', () => DOM.profileSettingsModal.classList.add('hidden'));
 
+  // Settings Profile Photo Handlers
+  if (DOM.settingsPhotoContainer) {
+    DOM.settingsPhotoContainer.addEventListener('click', () => DOM.settingsPhotoUploadInput.click());
+  }
+  if (DOM.settingsUploadPhotoBtn) {
+    DOM.settingsUploadPhotoBtn.addEventListener('click', () => DOM.settingsPhotoUploadInput.click());
+  }
+  if (DOM.settingsPhotoUploadInput) {
+    DOM.settingsPhotoUploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Photo must be less than 5MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        state.settingsAvatarDataUrl = ev.target.result;
+        DOM.settingsPhotoPreview.src = ev.target.result;
+        showToast('New photo selected! Click Save Changes.', 'info');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   DOM.updateProfileForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const displayName = DOM.settingsDisplayNameInput.value.trim();
     const bio = DOM.settingsBioInput.value.trim();
+    const avatar = state.settingsAvatarDataUrl || state.currentUser.avatar;
     const privacySettings = {
       showOnlineStatus: DOM.settingShowOnlineStatus.checked,
       allowSurpriseMingle: DOM.settingAllowSurpriseMingle.checked,
       allowMessagesFromNonMingles: DOM.settingAllowNonMingleMessages.checked
     };
 
-    state.socket.emit('user:update_profile', { displayName, bio, privacySettings }, (res) => {
+    state.socket.emit('user:update_profile', { displayName, bio, avatar, privacySettings }, (res) => {
       if (res?.success) {
         setCurrentUser(res.user);
+        state.settingsAvatarDataUrl = null;
         DOM.profileSettingsModal.classList.add('hidden');
-        showToast('Settings saved!', 'success');
+        showToast('Profile and settings updated!', 'success');
       }
     });
   });
@@ -1308,6 +1419,8 @@ function openSettingsModal() {
   DOM.settingsModalUsername.textContent = `@${state.currentUser.username}`;
   DOM.settingsDisplayNameInput.value = state.currentUser.displayName;
   DOM.settingsBioInput.value = state.currentUser.bio || '';
+  DOM.settingsPhotoPreview.src = state.currentUser.avatar;
+  state.settingsAvatarDataUrl = null;
   DOM.settingShowOnlineStatus.checked = state.currentUser.privacySettings?.showOnlineStatus !== false;
   DOM.settingAllowSurpriseMingle.checked = state.currentUser.privacySettings?.allowSurpriseMingle !== false;
   DOM.settingAllowNonMingleMessages.checked = state.currentUser.privacySettings?.allowMessagesFromNonMingles !== false;

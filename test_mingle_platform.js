@@ -1,5 +1,6 @@
 /**
  * Comprehensive Automated Verification Test for MINGLE Social Platform
+ * (Includes Password Authentication & Profile Photo Upload Tests)
  */
 
 const { io } = require('socket.io-client');
@@ -40,6 +41,8 @@ async function runMingleTests() {
   const testSuffix = Math.floor(Math.random() * 10000);
   const username1 = `sanjeevi_${testSuffix}`;
   const username2 = `alex_${testSuffix}`;
+  const password1 = 'sanjeeviSecret123';
+  const customAvatarPhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
   // Test 2: Check username availability
   await new Promise((resolve, reject) => {
@@ -53,26 +56,29 @@ async function runMingleTests() {
     });
   });
 
-  // Test 3: Register permanent identities
+  // Test 3: Register permanent identities with password and uploaded photo
   await new Promise((resolve, reject) => {
     client1.emit('user:register', {
       username: username1,
       displayName: 'Sanjeevi',
+      password: password1,
+      avatar: customAvatarPhoto,
       bio: 'Creator of MINGLE'
     }, (res) => {
       if (res.success) {
         userSanjeevi = res.user;
-        console.log(`✅ [Test 3A Passed] Registered @${userSanjeevi.username} (ID: ${userSanjeevi.id})`);
+        console.log(`✅ [Test 3A Passed] Registered @${userSanjeevi.username} with Password & Custom Photo (ID: ${userSanjeevi.id})`);
         
         // Register Alex
         client2.emit('user:register', {
           username: username2,
           displayName: 'Alex',
+          password: 'alexPassword456',
           bio: 'Building cool software'
         }, (res2) => {
           if (res2.success) {
             userAlex = res2.user;
-            console.log(`✅ [Test 3B Passed] Registered @${userAlex.username} (ID: ${userAlex.id})`);
+            console.log(`✅ [Test 3B Passed] Registered @${userAlex.username} with Password (ID: ${userAlex.id})`);
             resolve();
           } else {
             reject(new Error(res2.error));
@@ -84,16 +90,42 @@ async function runMingleTests() {
     });
   });
 
-  // Test 4: Duplicate username rejection
+  // Test 4: Password Authentication Validation
+  await new Promise((resolve, reject) => {
+    const authClient = io(SERVER_URL);
+    // 4A: Incorrect password attempt
+    authClient.emit('user:login', { username: username1, password: 'wrongPassword!' }, (res) => {
+      if (!res.success && res.error.includes('Incorrect password')) {
+        console.log('✅ [Test 4A Passed] Wrong password correctly rejected.');
+        
+        // 4B: Correct password attempt
+        authClient.emit('user:login', { username: username1, password: password1 }, (res2) => {
+          authClient.disconnect();
+          if (res2.success && res2.user.username === username1) {
+            console.log('✅ [Test 4B Passed] Correct password successfully authenticated.');
+            resolve();
+          } else {
+            reject(new Error(`Correct password login failed: ${res2.error}`));
+          }
+        });
+      } else {
+        authClient.disconnect();
+        reject(new Error('Incorrect password was not rejected!'));
+      }
+    });
+  });
+
+  // Test 5: Duplicate username rejection
   await new Promise((resolve, reject) => {
     const client3 = io(SERVER_URL);
     client3.emit('user:register', {
       username: username1,
-      displayName: 'Imposter'
+      displayName: 'Imposter',
+      password: 'imposterPassword'
     }, (res) => {
       client3.disconnect();
       if (!res.success && res.error.includes('already taken')) {
-        console.log(`✅ [Test 4 Passed] Duplicate username @${username1} properly rejected.`);
+        console.log(`✅ [Test 5 Passed] Duplicate username @${username1} properly rejected.`);
         resolve();
       } else {
         reject(new Error('Duplicate username was not rejected!'));
@@ -101,11 +133,11 @@ async function runMingleTests() {
     });
   });
 
-  // Test 5: Search discovery
+  // Test 6: Search discovery
   await new Promise((resolve, reject) => {
     client1.emit('user:search', 'alex', (res) => {
       if (res.success && res.results.some(u => u.username === username2)) {
-        console.log(`✅ [Test 5 Passed] Search discovery found @${username2} successfully.`);
+        console.log(`✅ [Test 6 Passed] Search discovery found @${username2} successfully.`);
         resolve();
       } else {
         reject(new Error('Search failed to find Alex'));
@@ -113,15 +145,15 @@ async function runMingleTests() {
     });
   });
 
-  // Test 6: Mingle Action
+  // Test 7: Mingle Action
   await new Promise((resolve, reject) => {
     client2.on('user:mingled_by', (data) => {
-      console.log(`✅ [Test 6A Passed] Alex received live Mingle notification from @${data.mingler.username}!`);
+      console.log(`✅ [Test 7A Passed] Alex received live Mingle notification from @${data.mingler.username}!`);
     });
 
     client1.emit('user:mingle', userAlex.id, (res) => {
       if (res.success && res.mingled) {
-        console.log(`✅ [Test 6B Passed] Sanjeevi successfully mingled with Alex!`);
+        console.log(`✅ [Test 7B Passed] Sanjeevi successfully mingled with Alex!`);
         resolve();
       } else {
         reject(new Error(res.error || 'Mingle action failed'));
@@ -129,11 +161,11 @@ async function runMingleTests() {
     });
   });
 
-  // Test 7: Direct Messaging between Mingled Users
+  // Test 8: Direct Messaging between Mingled Users
   await new Promise((resolve, reject) => {
     client2.on('dm:message', (msg) => {
       if (msg.senderId === userSanjeevi.id && msg.content === 'Hey Alex! Glad we mingled.') {
-        console.log(`✅ [Test 7 Passed] Real-time message delivered: "${msg.content}"`);
+        console.log(`✅ [Test 8 Passed] Real-time message delivered: "${msg.content}"`);
         resolve();
       }
     });
@@ -144,19 +176,19 @@ async function runMingleTests() {
     });
   });
 
-  // Test 8: Surprise Mingle Matchmaking
+  // Test 9: Surprise Mingle Matchmaking
   await new Promise((resolve, reject) => {
     let matched1 = false;
     let matched2 = false;
 
     client1.on('surprise:matched', (data) => {
-      console.log(`✅ [Test 8A Passed] Sanjeevi matched with: @${data.partner.username}`);
+      console.log(`✅ [Test 9A Passed] Sanjeevi matched with: @${data.partner.username}`);
       matched1 = true;
       if (matched1 && matched2) resolve();
     });
 
     client2.on('surprise:matched', (data) => {
-      console.log(`✅ [Test 8B Passed] Alex matched with: @${data.partner.username}`);
+      console.log(`✅ [Test 9B Passed] Alex matched with: @${data.partner.username}`);
       matched2 = true;
       if (matched1 && matched2) resolve();
     });
@@ -165,11 +197,11 @@ async function runMingleTests() {
     setTimeout(() => client2.emit('surprise:find'), 150);
   });
 
-  // Test 9: Unmingle Action
+  // Test 10: Unmingle Action
   await new Promise((resolve, reject) => {
     client1.emit('user:unmingle', userAlex.id, (res) => {
       if (res.success && res.unmingled) {
-        console.log(`✅ [Test 9 Passed] Sanjeevi successfully unmingled with Alex.`);
+        console.log(`✅ [Test 10 Passed] Sanjeevi successfully unmingled with Alex.`);
         resolve();
       } else {
         reject(new Error(res.error || 'Unmingle failed'));
@@ -180,7 +212,7 @@ async function runMingleTests() {
   client1.disconnect();
   client2.disconnect();
 
-  console.log('\n🎉 ALL 9 MINGLE PLATFORM TESTS PASSED! Permanent identity, discovery, social graph, chat, and surprise mingle are fully operational.');
+  console.log('\n🎉 ALL 10 MINGLE PLATFORM TESTS PASSED! Password auth, Instagram-style photo uploads, discovery, social graph, chat, and surprise mingle are fully operational.');
   process.exit(0);
 }
 

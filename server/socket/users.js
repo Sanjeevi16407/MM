@@ -36,6 +36,7 @@ function registerUserHandlers(io, socket, matchmaking) {
       const user = registerUser({
         username: data?.username,
         displayName: data?.displayName,
+        password: data?.password,
         avatar: data?.avatar,
         bio: data?.bio
       });
@@ -64,16 +65,20 @@ function registerUserHandlers(io, socket, matchmaking) {
   });
 
   // 3. Login / Reconnect Identity
-  socket.on('user:login', (identifier, callback) => {
+  socket.on('user:login', (data, callback) => {
     try {
-      const user = loginUser(identifier);
-      if (!user) {
+      const identifier = typeof data === 'object' ? (data?.username || data?.identifier) : data;
+      const password = typeof data === 'object' ? data?.password : null;
+
+      const loginRes = loginUser(identifier, password);
+      if (!loginRes.success) {
         if (typeof callback === 'function') {
-          callback({ success: false, error: 'User identity not found' });
+          callback({ success: false, error: loginRes.error || 'Login failed' });
         }
         return;
       }
 
+      const user = loginRes.user;
       bindSocketToUser(socket.id, user.id);
       socket.join(`user:${user.id}`);
 

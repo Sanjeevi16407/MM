@@ -1,13 +1,29 @@
 /**
  * User Identity, Mingle Social Graph, and Discovery Engine for MINGLE
+ * Includes Password Hashing & Custom Profile Photo Uploads
  */
 
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { db, scheduleSave } = require('./storage');
 
 // Live active socket connections: socketId -> userId & userId -> socketId
 const socketToUser = new Map();
 const userToSocket = new Map();
+
+function hashPassword(password, salt) {
+  if (!salt) {
+    salt = crypto.randomBytes(16).toString('hex');
+  }
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { hash, salt };
+}
+
+function verifyPassword(password, storedHash, storedSalt) {
+  if (!storedHash || !storedSalt) return true; // backward compatibility for accounts created without pwd
+  const { hash } = hashPassword(password, storedSalt);
+  return hash === storedHash;
+}
 
 function normalizeUsername(username) {
   if (typeof username !== 'string') return '';
@@ -29,20 +45,28 @@ function checkUsernameAvailable(username) {
   return { available: true, username: norm };
 }
 
-function registerUser({ username, displayName, avatar, bio }) {
+function registerUser({ username, displayName, password, avatar, bio }) {
   const check = checkUsernameAvailable(username);
   if (!check.available) {
     throw new Error(check.error);
+  }
+
+  if (!password || password.length < 4) {
+    throw new Error('Password must be at least 4 characters');
   }
 
   const norm = check.username;
   const id = uuidv4();
   const cleanDisplayName = (displayName && displayName.trim()) || norm;
 
+  const { hash, salt } = hashPassword(password);
+
   const newUser = {
     id,
     username: norm,
     displayName: cleanDisplayName,
+    passwordHash: hash,
+    passwordSalt: salt,
     avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${norm}`,
     bio: (bio && bio.trim()) || 'Happy to mingle and connect!',
     status: 'online', // 'online' | 'away' | 'busy' | 'offline'
@@ -64,8 +88,10 @@ function registerUser({ username, displayName, avatar, bio }) {
   return newUser;
 }
 
-function loginUser(identifier) {
-  if (!identifier) return null;
+function loginUser(identifier, password) {
+  if (!identifier) {
+    return { success: false, error: 'Please enter a username' };
+  }
   const norm = normalizeUsername(identifier);
   
   // Try by username
@@ -75,14 +101,28 @@ function loginUser(identifier) {
     userId = identifier;
   }
 
-  if (userId && db.users[userId]) {
-    const user = db.users[userId];
-    user.isOnline = true;
-    user.lastSeen = Date.now();
-    scheduleSave();
-    return user;
+  if (!userId || !db.users[userId]) {
+    return { success: false, error: `@${norm} does not exist. Please check your username or register.` };
   }
-  return null;
+
+  const user = db.users[userId];
+
+  // If user has password, verify it
+  if (user.passwordHash && user.passwordSalt) {
+    if (!password) {
+      return { success: false, error: 'Please enter your password' };
+    }
+    const isValid = verifyPassword(password, user.passwordHash, user.passwordSalt);
+    if (!isValid) {
+      return { success: false, error: 'Incorrect password. Please try again.' };
+    }
+  }
+
+  user.isOnline = true;
+  user.lastSeen = Date.now();
+  scheduleSave();
+
+  return { success: true, user };
 }
 
 function bindSocketToUser(socketId, userId) {

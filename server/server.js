@@ -13,13 +13,20 @@ const registerUserHandlers = require('./socket/users');
 const { registerChannelHandlers } = require('./socket/channels');
 const registerMessageHandlers = require('./socket/messages');
 const matchmakingModule = require('./socket/matchmaking');
+const { v4: uuidv4 } = require('uuid');
+const { db, scheduleSave } = require('./utils/storage');
 const {
   checkUsernameAvailable,
   registerUser,
   loginUser,
   restoreSession,
   getPublicProfile,
-  getAdminOverview
+  getAdminOverview,
+  getUserById,
+  getOnlineMinglers,
+  getMingledUsers,
+  mingleUser,
+  searchUsers
 } = require('./utils/users');
 
 const app = express();
@@ -143,6 +150,118 @@ app.post('/api/session', (req, res) => {
       success: false,
       error: 'Session check failed'
     });
+  }
+});
+
+// Live Online Users (Works across Vercel & WebSockets)
+app.get('/api/users/online', (req, res) => {
+  try {
+    const callerId = req.query.userId;
+    const online = getOnlineMinglers(callerId);
+    res.json({ success: true, users: online });
+  } catch (e) {
+    res.json({ success: false, users: [] });
+  }
+});
+
+// Home summary data
+app.get('/api/home-data', (req, res) => {
+  try {
+    const callerId = req.query.userId;
+    const mingles = callerId ? getMingledUsers(callerId) : [];
+    const onlineMingles = mingles.filter(m => m.isOnline);
+    const allOnline = getOnlineMinglers(callerId);
+    res.json({
+      success: true,
+      onlineMingles,
+      onlineMinglesCount: onlineMingles.length,
+      minglesCount: mingles.length,
+      totalOnlineCount: allOnline.length
+    });
+  } catch (e) {
+    res.json({ success: false, onlineMingles: [], onlineMinglesCount: 0, minglesCount: 0, totalOnlineCount: 0 });
+  }
+});
+
+// Discovery / Search
+app.get('/api/discovery', (req, res) => {
+  try {
+    const q = req.query.q || '';
+    const callerId = req.query.userId;
+    const results = searchUsers(q, callerId);
+    res.json({ success: true, results });
+  } catch (e) {
+    res.json({ success: false, results: [] });
+  }
+});
+
+// Mingle with user
+app.post('/api/mingle', (req, res) => {
+  try {
+    const { userId, targetUserId } = req.body;
+    const result = mingleUser(userId, targetUserId);
+    res.json(result);
+  } catch (e) {
+    res.json({ success: false, error: 'Mingle failed' });
+  }
+});
+
+// DM History & Poll
+app.get('/api/messages', (req, res) => {
+  try {
+    const { userId, partnerId, since } = req.query;
+    if (!userId || !partnerId) return res.json({ success: true, messages: [] });
+
+    const messages = db.messages.filter(msg => {
+      const match = (msg.senderId === userId && msg.receiverId === partnerId) ||
+                    (msg.senderId === partnerId && msg.receiverId === userId);
+      if (!match) return false;
+      if (since) return msg.timestamp > Number(since);
+      return true;
+    }).slice(-100);
+
+    res.json({ success: true, messages });
+  } catch (e) {
+    res.json({ success: false, messages: [] });
+  }
+});
+
+// Send Message REST
+app.post('/api/messages/send', (req, res) => {
+  try {
+    const { senderId, receiverId, content, attachment } = req.body;
+    if (!senderId || !receiverId || (!content && !attachment)) {
+      return res.status(400).json({ success: false, error: 'Missing parameters' });
+    }
+
+    const sender = getUserById(senderId);
+    if (!sender) return res.status(404).json({ success: false, error: 'Sender not found' });
+
+    const msg = {
+      id: uuidv4(),
+      type: attachment ? (attachment.type?.startsWith('image/') ? 'image' : 'file') : 'text',
+      senderId: sender.id,
+      senderUsername: sender.username,
+      senderDisplayName: sender.displayName,
+      senderAvatar: sender.avatar,
+      receiverId,
+      content: content ? content.trim() : '',
+      attachment: attachment || null,
+      reactions: {},
+      read: false,
+      timestamp: Date.now()
+    };
+
+    db.messages.push(msg);
+    scheduleSave();
+
+    // Broadcast via WebSocket if running
+    io.to(`user:${receiverId}`).emit('dm:message', msg);
+    io.to(`user:${senderId}`).emit('dm:message', msg);
+
+    res.json({ success: true, message: msg });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to send message' });
   }
 });
 

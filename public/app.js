@@ -322,6 +322,37 @@ function initApp() {
   try {
     checkExistingSession();
   } catch (e) {}
+
+  // Periodic real-time sync across devices & serverless environments
+  setInterval(() => {
+    if (state.currentUser && state.currentUser.id) {
+      if (state.activeSection === 'home') loadHomeData();
+      if (state.activeSection === 'online') loadOnlinePeople();
+      if (state.activeSection === 'mingled') loadMingledNetwork();
+      if (state.activeSection === 'chats' && state.activeChatPartner) {
+        pollChatMessages();
+      }
+    }
+  }, 3000);
+}
+
+async function pollChatMessages() {
+  if (!state.activeChatPartner || !state.currentUser) return;
+  try {
+    const resp = await fetch(`/api/messages?userId=${state.currentUser.id}&partnerId=${state.activeChatPartner.id}`);
+    const res = await resp.json();
+    if (res?.success && res?.messages) {
+      res.messages.forEach(msg => {
+        const existing = document.querySelector(`[data-msg-id="${msg.id}"]`);
+        if (!existing) {
+          appendChatMessage(msg, DOM.chatMessagesStream);
+          if (msg.senderId !== state.currentUser.id) {
+            sounds.playReceive();
+          }
+        }
+      });
+    }
+  } catch(e) {}
 }
 
 function showToast(message, type = 'info') {
@@ -673,19 +704,33 @@ function switchSection(sectionName) {
 }
 
 // 8. SECTION LOADERS
-function loadHomeData() {
-  state.socket.emit('user:home_data', (res) => {
-    if (res?.success) {
-      DOM.homeStatOnlineMingles.textContent = res.onlineMinglesCount;
-      DOM.homeStatTotalMingles.textContent = res.minglesCount;
-      DOM.homeStatTotalOnline.textContent = res.totalOnlineCount;
-      DOM.navOnlineBadge.textContent = res.totalOnlineCount;
-      DOM.navMingledBadge.textContent = res.minglesCount;
+async function loadHomeData() {
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('user:home_data', (res) => {
+      if (res?.success) {
+        updateHomeUI(res);
+      }
+    });
+  } else {
+    try {
+      const resp = await fetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
+      const res = await resp.json();
+      if (res?.success) {
+        updateHomeUI(res);
+      }
+    } catch (e) {}
+  }
+}
 
-      renderMobileStories(res.onlineMingles);
-      renderHomeOnlineMingles(res.onlineMingles);
-    }
-  });
+function updateHomeUI(res) {
+  if (DOM.homeStatOnlineMingles) DOM.homeStatOnlineMingles.textContent = res.onlineMinglesCount || 0;
+  if (DOM.homeStatTotalMingles) DOM.homeStatTotalMingles.textContent = res.minglesCount || 0;
+  if (DOM.homeStatTotalOnline) DOM.homeStatTotalOnline.textContent = res.totalOnlineCount || 0;
+  if (DOM.navOnlineBadge) DOM.navOnlineBadge.textContent = res.totalOnlineCount || 0;
+  if (DOM.navMingledBadge) DOM.navMingledBadge.textContent = res.minglesCount || 0;
+
+  renderMobileStories(res.onlineMingles);
+  renderHomeOnlineMingles(res.onlineMingles);
 }
 
 function renderMobileStories(mingles) {
@@ -813,21 +858,42 @@ function renderHomeOnlineMingles(mingles) {
   if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
-function loadOnlinePeople() {
-  state.socket.emit('user:online_list', (res) => {
-    if (res?.success) {
-      renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another browser tab to test live chat!');
-    }
-  });
+async function loadOnlinePeople() {
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('user:online_list', (res) => {
+      if (res?.success) {
+        renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another browser or phone to test live chat!');
+      }
+    });
+  } else {
+    try {
+      const resp = await fetch(`/api/users/online?userId=${state.currentUser?.id || ''}`);
+      const res = await resp.json();
+      if (res?.success) {
+        renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another browser or phone to test live chat!');
+      }
+    } catch (e) {}
+  }
 }
 
-function loadMingledNetwork() {
-  state.socket.emit('user:mingles_list', (res) => {
-    if (res?.success) {
-      DOM.mingledCountPill.textContent = res.mingles.length;
-      renderUserCardsGrid(res.mingles, DOM.mingledNetworkGrid, 'You have not connected with anyone yet. Explore Discover to find connections!');
-    }
-  });
+async function loadMingledNetwork() {
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('user:mingles_list', (res) => {
+      if (res?.success) {
+        DOM.mingledCountPill.textContent = res.mingles.length;
+        renderUserCardsGrid(res.mingles, DOM.mingledNetworkGrid, 'You have not connected with anyone yet. Explore Discover to find connections!');
+      }
+    });
+  } else {
+    try {
+      const resp = await fetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
+      const res = await resp.json();
+      if (res?.success && res?.onlineMingles) {
+        DOM.mingledCountPill.textContent = res.minglesCount || res.onlineMingles.length;
+        renderUserCardsGrid(res.onlineMingles, DOM.mingledNetworkGrid, 'You have not connected with anyone yet. Explore Discover to find connections!');
+      }
+    } catch (e) {}
+  }
 }
 
 function renderUserCardsGrid(users, container, emptyText) {
@@ -1536,25 +1602,60 @@ function setupEventListeners() {
   DOM.refreshOnlineBtn.addEventListener('click', loadOnlinePeople);
 
   // Active Chat Message Submit
-  DOM.activeChatForm.addEventListener('submit', (e) => {
+  DOM.activeChatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!state.activeChatPartner) return;
+    if (!state.activeChatPartner || !state.currentUser) return;
     const text = DOM.chatTextInput.value.trim();
     const attachment = state.attachedFile;
 
     if (!text && !attachment) return;
 
-    state.socket.emit('dm:message', {
-      recipientId: state.activeChatPartner.id,
+    if (state.socket && state.socket.connected) {
+      state.socket.emit('dm:message', {
+        recipientId: state.activeChatPartner.id,
+        content: text,
+        attachment
+      });
+    }
+
+    // Also send via REST API for serverless & cross-network delivery
+    try {
+      fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: state.currentUser.id,
+          receiverId: state.activeChatPartner.id,
+          content: text,
+          attachment
+        })
+      });
+    } catch (err) {}
+
+    // Immediate local message display
+    const localMsg = {
+      id: 'msg_' + Date.now(),
+      type: attachment ? (attachment.type?.startsWith('image/') ? 'image' : 'file') : 'text',
+      senderId: state.currentUser.id,
+      senderUsername: state.currentUser.username,
+      senderDisplayName: state.currentUser.displayName,
+      senderAvatar: state.currentUser.avatar,
+      receiverId: state.activeChatPartner.id,
       content: text,
-      attachment
-    });
+      attachment,
+      reactions: {},
+      read: true,
+      timestamp: Date.now()
+    };
+    appendChatMessage(localMsg, DOM.chatMessagesStream);
 
     sounds.playSend();
     DOM.chatTextInput.value = '';
     clearAttachment();
     DOM.chatEmojiDrawer.classList.add('hidden');
-    state.socket.emit('dm:typing', { recipientId: state.activeChatPartner.id, isTyping: false });
+    if (state.socket && state.socket.connected) {
+      state.socket.emit('dm:typing', { recipientId: state.activeChatPartner.id, isTyping: false });
+    }
   });
 
   // Surprise Chat Submit

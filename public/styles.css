@@ -1,61 +1,48 @@
 /* =========================================================
-   MINGLE 🐒 — Design Tokens, Glassmorphic Styling & Layout
+   MINGLE 🌟 — Premium Social Discovery & Messaging System
+   Style: Instagram + Bumble BFF + iMessage Clean Light Aesthetic
+   Primary Accent: Coral-Red #FF5A5F
    ========================================================= */
 
 :root {
-  --bg-primary: #07090D;
-  --bg-surface: rgba(15, 23, 42, 0.85);
-  --bg-card: #0f172a;
-  --bg-input: #0f172a;
-  --border-color: rgba(245, 158, 11, 0.15);
-  --border-muted: rgba(255, 255, 255, 0.08);
-  --accent-amber: #f59e0b;
-  --accent-orange: #f97316;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --bg-app: #F8F9FB;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-muted: #F3F4F6;
+  --bg-input: #F3F4F7;
+  
+  --coral-50: #FFF1F2;
+  --coral-100: #FFE4E6;
+  --coral-500: #FF5A5F;
+  --coral-600: #E0484D;
+  --coral-gradient: linear-gradient(135deg, #FF5A5F 0%, #FF3366 100%);
+  --story-gradient: linear-gradient(45deg, #FF5A5F, #FFA07A, #FF3366, #9B51E0);
+  
+  --text-main: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  
+  --border-subtle: #F0F2F5;
+  --border-light: #E5E7EB;
+  --border-focus: #FF5A5F;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 20px -2px rgba(17, 24, 39, 0.04);
+  --shadow-hover: 0 12px 28px -4px rgba(17, 24, 39, 0.08);
+  --shadow-coral: 0 8px 20px -4px rgba(255, 90, 95, 0.35);
 }
 
-/* Light Theme Variables */
-html:not(.dark) {
-  --bg-primary: #f8fafc;
-  --bg-surface: rgba(255, 255, 255, 0.9);
-  --bg-card: #ffffff;
-  --bg-input: #f1f5f9;
-  --border-color: rgba(245, 158, 11, 0.3);
-  --border-muted: rgba(0, 0, 0, 0.08);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-html:not(.dark) body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-html:not(.dark) aside,
-html:not(.dark) header,
-html:not(.dark) main {
-  background-color: var(--bg-card);
-  border-color: var(--border-muted);
-}
-
-html:not(.dark) .glass-panel {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(245, 158, 11, 0.35);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-}
-
-/* Glassmorphism Panel */
-.glass-panel {
-  background: var(--bg-surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
 }
 
 /* Custom Scrollbars */
@@ -67,69 +54,209 @@ html:not(.dark) .glass-panel {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
+  background: #E5E7EB;
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
+  background: #D1D5DB;
 }
 
-/* Navigation Hub Buttons */
-.nav-hub-btn {
+/* Navigation Buttons */
+.nav-item-btn {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   width: 100%;
-  padding: 0.65rem 0.9rem;
-  border-radius: 0.9rem;
-  font-size: 0.82rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-secondary);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
+  user-select: none;
 }
-.nav-hub-btn:hover {
-  color: var(--accent-amber);
-  background-color: rgba(245, 158, 11, 0.08);
+.nav-item-btn:hover {
+  color: var(--coral-500);
+  background-color: var(--coral-50);
 }
-.nav-hub-btn.active {
-  color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+.nav-item-btn.active {
+  color: #FFFFFF !important;
+  background: var(--coral-gradient);
+  box-shadow: var(--shadow-coral);
+  font-weight: 700;
+}
+.nav-item-btn.active i,
+.nav-item-btn.active span {
+  color: #FFFFFF !important;
+}
+
+/* Story Rings (Instagram Gradient Style) */
+.story-ring-wrapper {
+  position: relative;
+  padding: 2.5px;
+  background: var(--story-gradient);
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+.story-ring-wrapper:hover {
+  transform: scale(1.05);
+}
+.story-ring-inner {
+  background: #FFFFFF;
+  padding: 2px;
+  border-radius: 9999px;
+  display: flex;
+}
+.story-ring-inner img {
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+/* Online Presence Dot */
+.status-indicator {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 2px solid #FFFFFF;
+}
+.status-indicator.status-online,
+.status-online {
+  background-color: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+.status-indicator.status-offline,
+.status-offline {
+  background-color: #9CA3AF;
+}
+
+/* Suggested Card & Hover Lift */
+.suggested-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.suggested-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+  border-color: #FECDD3;
+}
+
+/* Coral Action Buttons */
+.btn-coral {
+  background: var(--coral-gradient);
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow-coral);
+  transition: all 0.18s ease;
+}
+.btn-coral:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+.btn-coral:active {
+  transform: scale(0.98);
+}
+
+.btn-coral-soft {
+  background: var(--coral-50);
+  color: var(--coral-500);
+  font-weight: 700;
+  border-radius: 0.9rem;
+  transition: all 0.15s ease;
+}
+.btn-coral-soft:hover {
+  background: var(--coral-100);
+}
+
+/* Mobile Tab Buttons */
+.mobile-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.75rem;
+  color: #6B7280;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-tab-btn.active {
+  color: var(--coral-500);
+  font-weight: 700;
+}
+.mobile-tab-btn.active i,
+.mobile-tab-btn.active span {
+  color: var(--coral-500);
+}
+
+/* Reaction Pill */
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background-color: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.reaction-pill:hover {
+  background-color: var(--coral-50);
+  border-color: #FECDD3;
+  color: var(--coral-500);
+}
+.reaction-pill.active {
+  background-color: var(--coral-100);
+  border-color: #FDA4AF;
+  color: var(--coral-600);
   font-weight: 700;
 }
 
-/* Online Presence Indicators */
-.status-indicator {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 9999px;
-  border: 2px solid #090d16;
+/* Toast Notifications */
+.nexa-toast,
+.mingle-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 14px 34px -4px rgba(17, 24, 39, 0.12);
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
 }
-.status-online {
-  background-color: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
-}
-.status-away {
-  background-color: #f59e0b;
-}
-.status-busy {
-  background-color: #ef4444;
-}
-.status-offline {
-  background-color: #64748b;
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Message Bubble Entrance Animation */
 .message-enter {
-  animation: mingleFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: mingleFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes mingleFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.99);
+    transform: translateY(4px) scale(0.99);
   }
   100% {
     opacity: 1;
@@ -137,106 +264,12 @@ html:not(.dark) .glass-panel {
   }
 }
 
-/* Emoji Grid Buttons */
-.emoji-btn {
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-  text-align: center;
-  transition: transform 0.12s ease, background-color 0.12s ease;
-}
-.emoji-btn:hover {
-  transform: scale(1.3);
-  background-color: rgba(245, 158, 11, 0.15);
-}
-
-/* Reaction Pill */
-.reaction-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
-  padding: 2px 7px;
-  border-radius: 9999px;
-  background-color: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-.reaction-pill:hover {
-  background-color: rgba(245, 158, 11, 0.25);
-  transform: scale(1.05);
-}
-.reaction-pill.active {
-  background-color: rgba(245, 158, 11, 0.35);
-  border-color: #f59e0b;
-  font-weight: 700;
-}
-
-/* Toast Notifications */
-.nexa-toast {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  pointer-events: auto;
-}
-
-@keyframes toastSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Accessibility: Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* =========================================================
-   MOBILE FIRST & PWA ENHANCEMENTS
-   ========================================================= */
-
-/* Mobile Bottom Navigation Button Active State */
-.mobile-tab-btn {
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.mobile-tab-btn.active {
-  color: #f59e0b;
-}
-.mobile-tab-btn.active i,
-.mobile-tab-btn.active span {
-  color: #f59e0b;
-  font-weight: 800;
-}
-
-/* Safe Area Inset Support for iOS & Android */
+/* Safe Area Inset Support */
 #mobileBottomNav {
-  padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 768px) {
-  /* Offset content above the bottom app bar */
   #sectionHomePane,
   #sectionDiscoverPane,
   #sectionOnlinePane,
@@ -244,12 +277,6 @@ html:not(.dark) .glass-panel {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  /* Chat form stays pinned above mobile bottom bar if hidden, or stays sticky */
-  #sectionChatsPane {
-    padding-bottom: 0 !important;
-  }
-
-  /* Mobile Story Avatar Bubbles */
   .story-bubble {
     display: flex;
     flex-direction: column;
@@ -257,19 +284,8 @@ html:not(.dark) .glass-panel {
     gap: 4px;
     cursor: pointer;
     flex-shrink: 0;
-    width: 62px;
-  }
-  .story-bubble img {
-    width: 52px;
-    height: 52px;
-    border-radius: 9999px;
-    border: 2px solid #f59e0b;
-    padding: 2px;
-    background-color: #0f172a;
-    transition: transform 0.15s ease;
-  }
-  .story-bubble:active img {
-    transform: scale(0.92);
+    width: 66px;
   }
 }
+
 

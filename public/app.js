@@ -95,8 +95,8 @@ const state = {
   typingTimer: null,
   usernameCheckTimer: null,
   topSearchTimer: null,
-  avatarSeeds: ['Monkey_1', 'Monkey_2', 'Monkey_3', 'Monkey_4', 'Monkey_5', 'Monkey_6'],
-  selectedAvatarSeed: 'Monkey_1'
+  avatarSeeds: ['Aarav', 'Priya', 'Rohan', 'Ananya', 'Kabir', 'Diya', 'Arjun', 'Meera'],
+  selectedAvatarSeed: 'Aarav'
 };
 
 // 3. DOM ELEMENTS
@@ -185,6 +185,7 @@ const DOM = {
   homeViewAllMingledBtn: document.getElementById('homeViewAllMingledBtn'),
   homeDiscoverBtn: document.getElementById('homeDiscoverBtn'),
   homeSurpriseBtn: document.getElementById('homeSurpriseBtn'),
+  mobileStoriesReel: document.getElementById('mobileStoriesReel'),
 
   // Active Chat Elements
   chatPartnerAvatar: document.getElementById('chatPartnerAvatar'),
@@ -206,22 +207,22 @@ const DOM = {
   attachmentSizeText: document.getElementById('attachmentSizeText'),
   cancelChatAttachmentBtn: document.getElementById('cancelChatAttachmentBtn'),
   chatEmojiDrawer: document.getElementById('chatEmojiDrawer'),
+  chatEmojiToggleBtn: document.getElementById('chatEmojiToggleBtn'),
   chatEmojiGrid: document.getElementById('chatEmojiGrid'),
   activeChatForm: document.getElementById('activeChatForm'),
   chatFileInput: document.getElementById('chatFileInput'),
   chatAttachBtn: document.getElementById('chatAttachBtn'),
-  chatEmojiToggleBtn: document.getElementById('chatEmojiToggleBtn'),
   chatTextInput: document.getElementById('chatTextInput'),
 
-  // Discover & Lists
+  // Discover & Online
   discoverSearchInput: document.getElementById('discoverSearchInput'),
   discoverResultsContainer: document.getElementById('discoverResultsContainer'),
   onlinePeopleGrid: document.getElementById('onlinePeopleGrid'),
   refreshOnlineBtn: document.getElementById('refreshOnlineBtn'),
-  mingledNetworkGrid: document.getElementById('mingledNetworkGrid'),
   mingledCountPill: document.getElementById('mingledCountPill'),
+  mingledNetworkGrid: document.getElementById('mingledNetworkGrid'),
 
-  // Surprise Mingle Elements
+  // Surprise Elements
   surpriseHeaderTitle: document.getElementById('surpriseHeaderTitle'),
   surpriseHeaderSubtitle: document.getElementById('surpriseHeaderSubtitle'),
   surpriseMingleNowBtn: document.getElementById('surpriseMingleNowBtn'),
@@ -239,7 +240,9 @@ const DOM = {
   surpriseChatForm: document.getElementById('surpriseChatForm'),
   surpriseTextInput: document.getElementById('surpriseTextInput'),
 
-  // Right Profile Drawer
+  // Right Side & Profile Drawer
+  rightSidebar: document.getElementById('rightSidebar'),
+  rightCommunityWidgets: document.getElementById('rightCommunityWidgets'),
   rightProfileDrawer: document.getElementById('rightProfileDrawer'),
   closeRightDrawerBtn: document.getElementById('closeRightDrawerBtn'),
   drawerAvatar: document.getElementById('drawerAvatar'),
@@ -278,15 +281,14 @@ const DOM = {
   // Mobile Bottom Navigation & Responsive
   mobileBottomNav: document.getElementById('mobileBottomNav'),
   mobileNavHome: document.getElementById('mobileNavHome'),
+  mobileNavDiscover: document.getElementById('mobileNavDiscover'),
   mobileNavChats: document.getElementById('mobileNavChats'),
   mobileNavChatsBadge: document.getElementById('mobileNavChatsBadge'),
   mobileNavSurprise: document.getElementById('mobileNavSurprise'),
-  mobileNavOnline: document.getElementById('mobileNavOnline'),
   mobileNavProfile: document.getElementById('mobileNavProfile'),
   mobileNavAvatar: document.getElementById('mobileNavAvatar'),
   mobileSidebarBackdrop: document.getElementById('mobileSidebarBackdrop'),
-  chatMobileBackBtn: document.getElementById('chatMobileBackBtn'),
-  mobileStoriesReel: document.getElementById('mobileStoriesReel')
+  chatMobileBackBtn: document.getElementById('chatMobileBackBtn')
 };
 
 // 4. INITIALIZATION
@@ -303,10 +305,10 @@ function initApp() {
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   const bgClass = type === 'error' 
-    ? 'bg-rose-950/90 text-rose-300 border border-rose-500/40' 
-    : (type === 'success' ? 'bg-amber-950/90 text-amber-300 border border-amber-500/40' : 'bg-slate-900/90 text-slate-200 border border-slate-700');
+    ? 'bg-rose-50 text-rose-600 border border-rose-200' 
+    : (type === 'success' ? 'bg-rose-50 text-[#FF5A5F] border border-rose-200' : 'bg-white text-gray-800 border border-gray-200');
   
-  toast.className = `nexa-toast ${bgClass}`;
+  toast.className = `mingle-toast ${bgClass}`;
   toast.innerHTML = `
     <i data-lucide="${type === 'error' ? 'alert-circle' : (type === 'success' ? 'sparkles' : 'info')}" class="w-4 h-4 shrink-0"></i>
     <span>${escapeHtml(message)}</span>
@@ -317,10 +319,10 @@ function showToast(message, type = 'info') {
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(20px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
+    toast.style.transform = 'translateY(-10px)';
+    toast.style.transition = 'all 0.25s ease';
+    setTimeout(() => toast.remove(), 250);
+  }, 3200);
 }
 
 // 5. SESSION & IDENTITY SETUP
@@ -623,37 +625,47 @@ function renderMobileStories(mingles) {
   surpriseBubble.className = 'story-bubble';
   surpriseBubble.onclick = () => switchSection('surprise');
   surpriseBubble.innerHTML = `
-    <div class="w-[52px] h-[52px] rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-xl shadow-lg border-2 border-slate-950">
-      🎲
+    <div class="story-ring-wrapper">
+      <div class="story-ring-inner">
+        <div class="w-14 h-14 rounded-full btn-coral flex items-center justify-center text-xl shadow-sm">
+          🎲
+        </div>
+      </div>
     </div>
-    <span class="text-[10px] font-bold text-amber-400 truncate max-w-[58px]">Surprise</span>
+    <span class="text-[11px] font-bold text-gray-800 truncate max-w-[66px] mt-1 text-center">Surprise</span>
   `;
   DOM.mobileStoriesReel.appendChild(surpriseBubble);
 
-  if (!mingles || mingles.length === 0) {
-    const emptyNotice = document.createElement('div');
-    emptyNotice.className = 'story-bubble opacity-60';
-    emptyNotice.onclick = () => switchSection('discover');
-    emptyNotice.innerHTML = `
-      <div class="w-[52px] h-[52px] rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-400">
-        <i data-lucide="plus" class="w-4 h-4"></i>
-      </div>
-      <span class="text-[9px] text-slate-400 truncate max-w-[58px]">Find Mingles</span>
-    `;
-    DOM.mobileStoriesReel.appendChild(emptyNotice);
-    return;
-  }
+  // Default suggested Indian profiles for rich stories if mingles is empty
+  const defaultStories = [
+    { name: 'Priya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Priya', online: true },
+    { name: 'Aarav', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aarav', online: true },
+    { name: 'Ananya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ananya', online: true },
+    { name: 'Rohan', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Rohan', online: true },
+    { name: 'Diya', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Diya', online: false },
+    { name: 'Kabir', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kabir', online: true }
+  ];
 
-  mingles.forEach(u => {
+  const storiesToRender = (mingles && mingles.length > 0) ? mingles : defaultStories;
+
+  storiesToRender.forEach(u => {
     const bubble = document.createElement('div');
     bubble.className = 'story-bubble';
-    bubble.onclick = () => openChatWithUser(u.id);
+    if (u.id) {
+      bubble.onclick = () => openChatWithUser(u.id);
+    } else {
+      bubble.onclick = () => switchSection('discover');
+    }
     bubble.innerHTML = `
-      <div class="relative">
-        <img src="${u.avatar}" class="w-[52px] h-[52px] rounded-full object-cover">
-        <span class="status-indicator status-online bottom-0.5 right-0.5 w-2.5 h-2.5"></span>
+      <div class="story-ring-wrapper">
+        <div class="story-ring-inner">
+          <div class="relative">
+            <img src="${u.avatar}" class="w-14 h-14 rounded-full object-cover">
+            <span class="status-indicator ${u.online !== false ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
+          </div>
+        </div>
       </div>
-      <span class="text-[10px] font-medium text-slate-200 truncate max-w-[58px]">${escapeHtml(u.displayName.split(' ')[0])}</span>
+      <span class="text-[11px] font-semibold text-gray-700 truncate max-w-[66px] mt-1 text-center">${escapeHtml((u.displayName || u.name || 'User').split(' ')[0])}</span>
     `;
     DOM.mobileStoriesReel.appendChild(bubble);
   });
@@ -661,42 +673,64 @@ function renderMobileStories(mingles) {
 
 function renderHomeOnlineMingles(mingles) {
   DOM.homeOnlineMinglesGrid.innerHTML = '';
-  if (!mingles || mingles.length === 0) {
-    DOM.homeOnlineMinglesGrid.innerHTML = `
-      <div class="col-span-full py-8 text-center bg-slate-900/40 rounded-2xl border border-slate-800 p-6">
-        <p class="text-xs text-slate-400">None of your mingled connections are online right now.</p>
-        <button onclick="switchSection('discover')" class="mt-2 text-xs text-amber-400 hover:underline font-bold">Discover & Mingle with new people →</button>
-      </div>
-    `;
-    return;
-  }
+  
+  // Suggested curated people if real user has no connections yet
+  const suggestedPeople = [
+    { name: 'Priya Patel', username: 'priya_design', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Priya', bio: 'Product Designer • UI/UX • Coffee enthusiast ☕', tag: '#Design', online: true },
+    { name: 'Aarav Sharma', username: 'aarav_builds', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aarav', bio: 'Building indie web tools & AI agents 🚀', tag: '#Tech', online: true },
+    { name: 'Ananya Iyer', username: 'ananya_creates', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ananya', bio: 'Content creator • Music & books lover 🎧', tag: '#Creative', online: true },
+    { name: 'Rohan Verma', username: 'rohan_v', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Rohan', bio: 'Full-stack dev & Bangalore tech organizer 💻', tag: '#Startups', online: true },
+    { name: 'Kabir Mehta', username: 'kabir_m', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kabir', bio: 'Photographer • Road trips & photography 📷', tag: '#Photo', online: false },
+    { name: 'Diya Sen', username: 'diya_s', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Diya', bio: 'Architecture & sustainable living advocate 🌿', tag: '#Lifestyle', online: true }
+  ];
 
-  mingles.forEach(user => {
+  const people = (mingles && mingles.length > 0) ? mingles : suggestedPeople;
+
+  people.forEach(user => {
     const card = document.createElement('div');
-    card.className = 'p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 transition flex items-center justify-between shadow-sm';
+    card.className = 'suggested-card p-5 flex flex-col justify-between space-y-4';
+    const isRealUser = !!user.id;
+    const isOnline = user.isOnline ?? user.online ?? true;
+    const displayName = user.displayName || user.name;
+    const username = user.username;
+    const bio = user.bio || 'Happy to connect and chat!';
+    const tag = user.tag || '#Community';
+
     card.innerHTML = `
-      <div class="flex items-center gap-3 min-w-0 cursor-pointer" onclick="openChatWithUser('${user.id}')">
-        <div class="relative shrink-0">
-          <img src="${user.avatar}" class="w-10 h-10 rounded-full bg-slate-800 object-cover border border-slate-700">
-          <span class="status-indicator status-online bottom-0 right-0"></span>
+      <div>
+        <div class="flex items-start justify-between">
+          <div class="relative cursor-pointer" onclick="${isRealUser ? `openProfileDrawer('${user.id}')` : `switchSection('discover')`}">
+            <img src="${user.avatar}" class="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-200 object-cover">
+            <span class="status-indicator ${isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
+          </div>
+          <span class="text-[10px] font-bold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">${tag}</span>
         </div>
-        <div class="truncate">
-          <p class="text-xs font-bold text-white truncate">${escapeHtml(user.displayName)}</p>
-          <p class="text-[10px] text-amber-400/80 font-mono truncate">@${user.username}</p>
+        <div class="mt-3">
+          <h4 class="text-sm font-bold text-gray-900 truncate hover:text-[#FF5A5F] cursor-pointer" onclick="${isRealUser ? `openProfileDrawer('${user.id}')` : `switchSection('discover')`}">${escapeHtml(displayName)}</h4>
+          <p class="text-xs font-medium text-gray-400 font-mono">@${username}</p>
+          <p class="text-xs text-gray-600 mt-2 leading-relaxed line-clamp-2">${escapeHtml(bio)}</p>
         </div>
       </div>
-      <button onclick="openChatWithUser('${user.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 text-xs font-bold transition">
-        Message
-      </button>
+
+      <div class="pt-3 border-t border-gray-100 flex items-center gap-2">
+        <button onclick="${isRealUser ? `handleMingleToggle('${user.id}', ${user.isMingled})` : `switchSection('discover')`}" class="flex-1 py-2 px-3 btn-coral text-xs font-bold rounded-xl flex items-center justify-center gap-1">
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span>${user.isMingled ? 'Connected' : 'Connect'}</span>
+        </button>
+        <button onclick="${isRealUser ? `openChatWithUser('${user.id}')` : `switchSection('discover')`}" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition">
+          Message
+        </button>
+      </div>
     `;
     DOM.homeOnlineMinglesGrid.appendChild(card);
   });
+  lucide.createIcons();
 }
 
 function loadOnlinePeople() {
   state.socket.emit('user:online_list', (res) => {
     if (res?.success) {
-      renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another window to test!');
+      renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another browser tab to test live chat!');
     }
   });
 }
@@ -705,7 +739,7 @@ function loadMingledNetwork() {
   state.socket.emit('user:mingles_list', (res) => {
     if (res?.success) {
       DOM.mingledCountPill.textContent = res.mingles.length;
-      renderUserCardsGrid(res.mingles, DOM.mingledNetworkGrid, 'You haven\'t mingled with anyone yet. Search or use Discover to find friends!');
+      renderUserCardsGrid(res.mingles, DOM.mingledNetworkGrid, 'You have not connected with anyone yet. Explore Discover to find connections!');
     }
   });
 }
@@ -714,7 +748,7 @@ function renderUserCardsGrid(users, container, emptyText) {
   container.innerHTML = '';
   if (!users || users.length === 0) {
     container.innerHTML = `
-      <div class="col-span-full py-12 text-center text-xs text-slate-400 bg-slate-900/40 rounded-3xl border border-slate-800 p-8">
+      <div class="col-span-full py-12 text-center text-xs text-gray-500 bg-white rounded-3xl border border-gray-200 p-8 shadow-sm">
         ${escapeHtml(emptyText)}
       </div>
     `;
@@ -723,45 +757,46 @@ function renderUserCardsGrid(users, container, emptyText) {
 
   users.forEach(user => {
     const card = document.createElement('div');
-    card.className = 'p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between space-y-3';
+    card.className = 'suggested-card p-5 flex flex-col justify-between space-y-3.5';
     
     const statusDotClass = user.isOnline ? 'status-online' : 'status-offline';
     const lastSeenText = user.isOnline ? '● Online' : `○ Last seen ${formatLastSeen(user.lastSeen)}`;
-    const statusTextColor = user.isOnline ? 'text-emerald-400' : 'text-slate-500';
+    const statusTextColor = user.isOnline ? 'text-emerald-600' : 'text-gray-400';
 
     card.innerHTML = `
       <div class="flex items-start gap-3 min-w-0">
         <div class="relative shrink-0 cursor-pointer" onclick="openProfileDrawer('${user.id}')">
-          <img src="${user.avatar}" class="w-11 h-11 rounded-2xl bg-slate-800 object-cover border border-slate-700">
+          <img src="${user.avatar}" class="w-12 h-12 rounded-2xl bg-gray-50 object-cover border border-gray-200">
           <span class="status-indicator ${statusDotClass} bottom-0 right-0"></span>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-white truncate cursor-pointer hover:text-amber-400" onclick="openProfileDrawer('${user.id}')">${escapeHtml(user.displayName)}</h4>
+            <h4 class="text-xs font-bold text-gray-900 truncate cursor-pointer hover:text-[#FF5A5F]" onclick="openProfileDrawer('${user.id}')">${escapeHtml(user.displayName)}</h4>
             <span class="text-[10px] font-mono ${statusTextColor}">${lastSeenText}</span>
           </div>
-          <p class="text-[11px] text-amber-400/90 font-mono">@${user.username}</p>
-          <p class="text-[11px] text-slate-400 truncate mt-1">${escapeHtml(user.bio || 'Happy to mingle!')}</p>
+          <p class="text-[11px] text-gray-400 font-mono">@${user.username}</p>
+          <p class="text-xs text-gray-600 truncate mt-1">${escapeHtml(user.bio || 'Happy to connect!')}</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+      <div class="flex items-center gap-2 pt-2.5 border-t border-gray-100">
         ${user.isMingled ? `
-          <button onclick="handleMingleToggle('${user.id}', true)" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 text-xs font-bold border border-slate-700 transition">
-            Unmingle
+          <button onclick="handleMingleToggle('${user.id}', true)" class="flex-1 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 text-gray-700 hover:text-rose-600 text-xs font-bold border border-gray-200 transition">
+            Disconnect
           </button>
         ` : `
-          <button onclick="handleMingleToggle('${user.id}', false)" class="flex-1 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs font-bold shadow hover:from-amber-400 transition">
-            [ Mingle ]
+          <button onclick="handleMingleToggle('${user.id}', false)" class="flex-1 py-2 rounded-xl btn-coral text-white text-xs font-bold shadow">
+            Connect
           </button>
         `}
-        <button onclick="openChatWithUser('${user.id}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">
+        <button onclick="openChatWithUser('${user.id}')" class="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-bold transition">
           Message
         </button>
       </div>
     `;
     container.appendChild(card);
   });
+  lucide.createIcons();
 }
 
 // 9. THREADS & ACTIVE CHAT LOGIC
@@ -1015,32 +1050,32 @@ function appendChatMessage(msg, container, autoScroll = true) {
     wrapper.innerHTML = `
       <div class="flex flex-col items-end max-w-md lg:max-w-xl">
         <div class="flex items-center gap-1.5 mb-1">
-          <span class="msg-read-status text-[9px] ${msg.read ? 'text-amber-400 font-semibold' : 'text-slate-500'}">
+          <span class="msg-read-status text-[10px] ${msg.read ? 'text-[#FF5A5F] font-semibold' : 'text-gray-400'}">
             ${msg.read ? '✓✓ Read' : '✓ Sent'}
           </span>
-          <span class="text-[9px] text-slate-500">${timeStr}</span>
+          <span class="text-[10px] text-gray-400">${timeStr}</span>
         </div>
-        <div class="py-2.5 px-4 rounded-2xl rounded-tr-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-medium shadow-md text-xs leading-relaxed break-words">
+        <div class="py-2.5 px-4 rounded-2xl rounded-tr-sm bg-gradient-to-r from-[#FF5A5F] to-[#FF3366] text-white font-medium shadow-md shadow-coral-500/20 text-xs leading-relaxed break-words">
           ${escapeHtml(msg.content)}
           ${attachmentHtml}
         </div>
         ${reactionsHtml}
       </div>
-      <img src="${msg.senderAvatar || state.currentUser.avatar}" class="w-7 h-7 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-amber-500/40">
+      <img src="${msg.senderAvatar || state.currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-100 object-cover shrink-0 mt-1 border border-gray-200">
     `;
   } else {
     wrapper.innerHTML = `
-      <img src="${msg.senderAvatar}" class="w-7 h-7 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-slate-700">
+      <img src="${msg.senderAvatar}" class="w-8 h-8 rounded-full bg-gray-100 object-cover shrink-0 mt-1 border border-gray-200">
       <div class="flex flex-col items-start max-w-md lg:max-w-xl">
         <div class="flex items-center gap-1.5 mb-1">
-          <span class="text-xs font-bold text-slate-200">${escapeHtml(msg.senderDisplayName || 'User')}</span>
-          <span class="text-[9px] text-slate-500">${timeStr}</span>
+          <span class="text-xs font-bold text-gray-800">${escapeHtml(msg.senderDisplayName || 'User')}</span>
+          <span class="text-[10px] text-gray-400">${timeStr}</span>
         </div>
-        <div class="py-2.5 px-4 rounded-2xl rounded-tl-sm bg-slate-900 text-slate-100 border border-slate-800 shadow-sm text-xs leading-relaxed break-words group relative">
+        <div class="py-2.5 px-4 rounded-2xl rounded-tl-sm bg-white text-gray-900 border border-gray-200 shadow-sm text-xs leading-relaxed break-words group relative">
           ${escapeHtml(msg.content)}
           ${attachmentHtml}
           <!-- Quick Reactions on Hover -->
-          <div class="absolute -top-3 right-2 hidden group-hover:flex items-center bg-slate-900 border border-slate-700 rounded-full px-1.5 py-0.5 shadow gap-1 z-10 select-none">
+          <div class="absolute -top-3 right-2 hidden group-hover:flex items-center bg-white border border-gray-200 rounded-full px-1.5 py-0.5 shadow-md gap-1 z-10 select-none">
             <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '❤️')">❤️</span>
             <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '👍')">👍</span>
             <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '🔥')">🔥</span>
@@ -1060,7 +1095,7 @@ function appendSystemMessage(text, container) {
   const div = document.createElement('div');
   div.className = 'flex justify-center my-2 message-enter';
   div.innerHTML = `
-    <div class="px-3.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-400 text-xs font-medium flex items-center gap-1.5 shadow-sm">
+    <div class="px-3.5 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
       <span>${escapeHtml(text)}</span>
     </div>
   `;
@@ -1080,25 +1115,26 @@ function openProfileDrawer(userId) {
       DOM.drawerAvatar.src = user.avatar;
       DOM.drawerDisplayName.textContent = user.displayName;
       DOM.drawerUsername.textContent = `@${user.username}`;
-      DOM.drawerBio.textContent = user.bio || 'Happy to mingle!';
+      DOM.drawerBio.textContent = user.bio || 'Happy to connect & chat!';
       DOM.drawerMinglesCount.textContent = user.mingleCount || 0;
       DOM.drawerMingleStatusText.textContent = user.mingleStatus ? user.mingleStatus.toUpperCase() : 'AVAILABLE';
       DOM.drawerLastSeen.textContent = user.isOnline ? '● Online' : `○ Last seen ${formatLastSeen(user.lastSeen)}`;
       DOM.drawerStatusDot.className = `status-indicator ${user.isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0`;
 
       if (user.isMingled) {
-        DOM.drawerMingleBtn.textContent = 'Unmingle';
-        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700';
+        DOM.drawerMingleBtn.textContent = 'Disconnect';
+        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition bg-gray-100 hover:bg-rose-50 text-gray-700 hover:text-rose-600 border border-gray-200';
       } else {
-        DOM.drawerMingleBtn.textContent = '+ Mingle';
-        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow';
+        DOM.drawerMingleBtn.textContent = '+ Connect';
+        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition btn-coral text-white shadow';
       }
 
       DOM.drawerMingleBtn.onclick = () => handleMingleToggle(user.id, user.isMingled);
       DOM.drawerMessageBtn.onclick = () => openChatWithUser(user.id);
 
+      if (DOM.rightCommunityWidgets) DOM.rightCommunityWidgets.classList.add('hidden');
       DOM.rightProfileDrawer.classList.remove('hidden');
-      DOM.rightProfileDrawer.classList.add('xl:flex');
+      DOM.rightProfileDrawer.classList.add('flex');
     }
   });
 }
@@ -1303,8 +1339,8 @@ function setupEventListeners() {
   });
 
   DOM.authTabRegister.addEventListener('click', () => {
-    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 shadow';
-    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
+    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-white btn-coral shadow';
+    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
     DOM.registerForm.classList.remove('hidden');
     DOM.loginForm.classList.add('hidden');
     if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
@@ -1312,8 +1348,8 @@ function setupEventListeners() {
   });
 
   DOM.authTabLogin.addEventListener('click', () => {
-    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 shadow';
-    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
+    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-white btn-coral shadow';
+    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
     DOM.loginForm.classList.remove('hidden');
     DOM.registerForm.classList.add('hidden');
     if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
@@ -1557,7 +1593,8 @@ function setupEventListeners() {
 
   DOM.closeRightDrawerBtn.addEventListener('click', () => {
     DOM.rightProfileDrawer.classList.add('hidden');
-    DOM.rightProfileDrawer.classList.remove('xl:flex');
+    DOM.rightProfileDrawer.classList.remove('flex');
+    if (DOM.rightCommunityWidgets) DOM.rightCommunityWidgets.classList.remove('hidden');
   });
 
   // Mobile Menu Toggle & Backdrop
@@ -1581,9 +1618,9 @@ function setupEventListeners() {
 
   // Mobile App Bottom Navigation Tabs
   if (DOM.mobileNavHome) DOM.mobileNavHome.addEventListener('click', () => switchSection('home'));
-  if (DOM.mobileNavChats) DOM.mobileNavChats.addEventListener('click', () => switchSection('chats'));
+  if (DOM.mobileNavDiscover) DOM.mobileNavDiscover.addEventListener('click', () => switchSection('discover'));
   if (DOM.mobileNavSurprise) DOM.mobileNavSurprise.addEventListener('click', () => switchSection('surprise'));
-  if (DOM.mobileNavOnline) DOM.mobileNavOnline.addEventListener('click', () => switchSection('online'));
+  if (DOM.mobileNavChats) DOM.mobileNavChats.addEventListener('click', () => switchSection('chats'));
   if (DOM.mobileNavProfile) DOM.mobileNavProfile.addEventListener('click', openSettingsModal);
 
   // Mobile Back Button in Chat View

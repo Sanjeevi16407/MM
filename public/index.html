@@ -1,35 +1,40 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MINGLE 🐒 — Social Discovery & Real-Time Messaging</title>
+  <title>mingle. — Discover & Connect</title>
   
-  <!-- Google Fonts: Plus Jakarta Sans -->
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', '"Inter"', 'sans-serif'],
           },
           colors: {
-            mingle: {
-              bg: '#07090D',
-              surface: 'rgba(15, 23, 42, 0.75)',
-              card: '#0f172a',
-              amber: '#f59e0b',
-              orange: '#f97316',
-              cyan: '#06b6d4',
-              violet: '#8b5cf6',
-              border: 'rgba(245, 158, 11, 0.15)'
+            coral: {
+              50: '#FFF1F2',
+              100: '#FFE4E6',
+              200: '#FECDD3',
+              300: '#FDA4AF',
+              400: '#FB7185',
+              500: '#FF5A5F',
+              600: '#E0484D',
+              700: '#BE123C'
+            },
+            app: {
+              bg: '#F8F9FB',
+              card: '#FFFFFF',
+              border: '#E5E7EB',
+              muted: '#F3F4F6'
             }
           }
         }
@@ -41,36 +46,28 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-[#07090D] text-slate-100 font-sans antialiased overflow-hidden h-screen flex flex-col select-none">
+<body class="bg-[#F8F9FB] text-gray-900 font-sans antialiased overflow-hidden h-screen flex flex-col select-none">
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- 1. PERMANENT IDENTITY AUTH MODAL -->
-  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xl transition-all duration-500">
-    <div class="glass-panel w-full max-w-md p-8 rounded-3xl border border-amber-500/20 shadow-2xl shadow-amber-500/10 text-center relative overflow-hidden transform transition-all scale-100">
+  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-300 p-4">
+    <div class="bg-white w-full max-w-md p-6 sm:p-8 rounded-[28px] border border-gray-100 shadow-2xl text-center relative overflow-hidden">
       
-      <!-- Background Ambient Glow -->
-      <div class="absolute -top-20 -left-20 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-orange-500/15 rounded-full blur-3xl pointer-events-none"></div>
-
-      <!-- Mingle Emblem -->
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 text-white shadow-lg shadow-amber-500/30 mb-3 ring-1 ring-white/20 text-3xl">
-        <span>🐒</span>
+      <!-- Top Brand Logo -->
+      <div class="flex items-center justify-center gap-1 mb-1">
+        <h1 class="text-3xl font-black tracking-tight text-gray-900">mingle<span class="text-[#FF5A5F]">.</span></h1>
       </div>
-
-      <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
-        <span>MINGLE</span>
-      </h1>
-      <p class="text-xs text-slate-400 mt-1 mb-5">Create your permanent identity. Find people. Mingle.</p>
+      <p class="text-xs text-gray-500 mb-5">Discover interesting people & chat in real-time</p>
 
       <!-- Tab Switcher: Register / Login -->
-      <div class="flex p-1 bg-slate-900/90 border border-slate-800 rounded-xl mb-5">
-        <button type="button" id="authTabRegister" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 shadow">
-          Create Identity
+      <div class="flex p-1 bg-gray-100 rounded-2xl mb-5">
+        <button type="button" id="authTabRegister" class="flex-1 py-2 text-xs font-bold rounded-xl transition bg-white text-gray-900 shadow-sm">
+          Create Account
         </button>
-        <button type="button" id="authTabLogin" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
-          Sign In (@username)
+        <button type="button" id="authTabLogin" class="flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900">
+          Sign In
         </button>
       </div>
 
@@ -80,33 +77,33 @@
         <!-- Instagram Style Profile Photo Upload & Avatar Picker -->
         <div class="flex flex-col items-center justify-center pt-1 pb-1">
           <div class="relative group cursor-pointer" id="regAvatarPreviewContainer">
-            <img id="regPhotoPreview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Monkey_1" 
-              class="w-20 h-20 rounded-full object-cover bg-slate-800 border-2 border-amber-500 shadow-xl group-hover:opacity-90 transition">
-            <div class="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-amber-300 font-bold transition">
-              <i data-lucide="camera" class="w-4 h-4 mb-0.5"></i>
-              <span>Upload</span>
+            <div class="story-ring-wrapper p-1">
+              <div class="story-ring-inner">
+                <img id="regPhotoPreview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Aarav" 
+                  class="w-20 h-20 rounded-full object-cover bg-gray-100">
+              </div>
             </div>
-            <span class="absolute bottom-0 right-0 p-1.5 bg-amber-500 text-slate-950 rounded-full shadow-lg">
-              <i data-lucide="camera" class="w-3 h-3 stroke-[2.5]"></i>
+            <span class="absolute bottom-1 right-1 p-1.5 bg-[#FF5A5F] text-white rounded-full shadow-md">
+              <i data-lucide="camera" class="w-3.5 h-3.5 stroke-[2.5]"></i>
             </span>
           </div>
 
           <input type="file" id="regPhotoUploadInput" accept="image/*" class="hidden">
 
           <div class="flex items-center gap-2 mt-2">
-            <button type="button" id="regUploadPhotoBtn" class="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1">
+            <button type="button" id="regUploadPhotoBtn" class="text-xs text-[#FF5A5F] hover:underline font-bold flex items-center gap-1">
               <i data-lucide="image" class="w-3.5 h-3.5"></i> Upload Photo
             </button>
-            <span class="text-slate-600 text-xs">•</span>
-            <button type="button" id="toggleAvatarsListBtn" class="text-xs text-slate-400 hover:text-slate-200 font-medium">
-              Pick Avatar
+            <span class="text-gray-300 text-xs">•</span>
+            <button type="button" id="toggleAvatarsListBtn" class="text-xs text-gray-500 hover:text-gray-800 font-medium">
+              Choose Avatar
             </button>
           </div>
 
           <!-- Collapsible Avatar List -->
-          <div id="collapsibleAvatarSection" class="hidden w-full mt-2.5 pt-2 border-t border-slate-800 text-center">
+          <div id="collapsibleAvatarSection" class="hidden w-full mt-2.5 pt-2 border-t border-gray-100 text-center">
             <div class="flex items-center justify-center gap-2 mb-1.5" id="registerAvatarList"></div>
-            <button type="button" id="randomizeAvatarsBtn" class="text-[11px] text-amber-400/90 hover:text-amber-300 font-medium flex items-center justify-center w-full gap-1 transition">
+            <button type="button" id="randomizeAvatarsBtn" class="text-[11px] text-[#FF5A5F] hover:underline font-medium flex items-center justify-center w-full gap-1">
               <i data-lucide="refresh-cw" class="w-3 h-3"></i> Randomize Avatars
             </button>
           </div>
@@ -114,51 +111,51 @@
 
         <!-- Permanent Username -->
         <div>
-          <label for="regUsernameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Permanent Username
+          <label for="regUsernameInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+            Username
           </label>
           <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">@</span>
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">@</span>
             <input type="text" id="regUsernameInput" required minlength="3" maxlength="20" placeholder="username"
-              class="w-full pl-8 pr-10 py-2 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 font-mono transition">
+              class="w-full pl-8 pr-10 py-2.5 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
             <span id="usernameCheckIcon" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
-              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
             </span>
           </div>
-          <p id="usernameFeedback" class="text-[10px] mt-0.5 font-medium text-slate-400"></p>
+          <p id="usernameFeedback" class="text-[10px] mt-0.5 font-medium text-gray-500"></p>
         </div>
 
         <!-- Display Name -->
         <div>
-          <label for="regDisplayNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Display Name</label>
-          <input type="text" id="regDisplayNameInput" required maxlength="30" placeholder="Your Display Name"
-            class="w-full px-3.5 py-2 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 transition">
+          <label for="regDisplayNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Your Full Name</label>
+          <input type="text" id="regDisplayNameInput" required maxlength="30" placeholder="e.g. Aarav Sharma"
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
         </div>
 
         <!-- Password Input -->
         <div>
-          <label for="regPasswordInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+          <label for="regPasswordInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Password</label>
           <div class="relative">
             <input type="password" id="regPasswordInput" required minlength="4" placeholder="••••••••"
-              class="w-full pl-3.5 pr-10 py-2 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 transition">
-            <button type="button" id="toggleRegPasswordBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" tabindex="-1">
+              class="w-full pl-3.5 pr-10 py-2.5 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
+            <button type="button" id="toggleRegPasswordBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700" tabindex="-1">
               <i id="regPasswordEyeIcon" data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
-          <p class="text-[10px] text-slate-500 mt-0.5">Minimum 4 characters</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">Minimum 4 characters</p>
         </div>
 
         <!-- Short Bio -->
         <div>
-          <label for="regBioInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Bio (Optional)</label>
-          <input type="text" id="regBioInput" maxlength="80" placeholder="Building cool stuff & ready to mingle"
-            class="w-full px-3.5 py-2 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 transition">
+          <label for="regBioInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Bio / Interests</label>
+          <input type="text" id="regBioInput" maxlength="80" placeholder="e.g. Designer • Coffee lover • Tech geek"
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
         </div>
 
-        <div id="regErrorMsg" class="hidden p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-semibold text-center"></div>
+        <div id="regErrorMsg" class="hidden p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"></div>
 
-        <button type="submit" id="createIdentityBtn" class="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-[0.98] flex items-center justify-center gap-2 mt-2 text-xs">
-          <span id="createIdBtnText">CREATE ID</span>
+        <button type="submit" id="createIdentityBtn" class="w-full py-3 px-4 btn-coral text-white font-bold rounded-xl shadow-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2 mt-3 text-xs">
+          <span id="createIdBtnText">Create Profile</span>
           <i id="createIdBtnIcon" data-lucide="arrow-right" class="w-4 h-4 stroke-[3]"></i>
         </button>
       </form>
@@ -166,28 +163,28 @@
       <!-- B. LOGIN FORM -->
       <form id="loginForm" class="hidden space-y-4 text-left">
         <div>
-          <label for="loginUsernameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Enter Your @Username</label>
+          <label for="loginUsernameInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Enter Your Username</label>
           <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">@</span>
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">@</span>
             <input type="text" id="loginUsernameInput" required placeholder="username"
-              class="w-full pl-8 pr-4 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 font-mono transition">
+              class="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
           </div>
         </div>
 
         <div>
-          <label for="loginPasswordInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+          <label for="loginPasswordInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Password</label>
           <div class="relative">
             <input type="password" id="loginPasswordInput" required placeholder="••••••••"
-              class="w-full pl-3.5 pr-10 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-xs text-white placeholder-slate-500 transition">
-            <button type="button" id="toggleLoginPasswordBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" tabindex="-1">
+              class="w-full pl-3.5 pr-10 py-3 bg-gray-50 border border-gray-200 focus:border-[#FF5A5F] focus:bg-white rounded-xl outline-none text-xs text-gray-900 placeholder-gray-400 font-medium transition">
+            <button type="button" id="toggleLoginPasswordBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700" tabindex="-1">
               <i id="loginPasswordEyeIcon" data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
-          <p id="loginErrorMsg" class="hidden text-xs text-rose-400 mt-2 font-medium"></p>
+          <p id="loginErrorMsg" class="hidden text-xs text-rose-500 mt-2 font-medium"></p>
         </div>
 
-        <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-[0.98] flex items-center justify-center gap-2 mt-4 text-xs">
-          <span>SIGN IN</span>
+        <button type="submit" class="w-full py-3.5 px-4 btn-coral text-white font-bold rounded-xl shadow-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2 mt-4 text-xs">
+          <span>Sign In</span>
           <i data-lucide="log-in" class="w-4 h-4 stroke-[3]"></i>
         </button>
       </form>
@@ -196,66 +193,55 @@
   </div>
 
   <!-- 2. TOP GLOBAL HEADER -->
-  <header class="h-14 border-b border-slate-800/80 bg-slate-950/75 backdrop-blur-md px-4 md:px-6 flex items-center justify-between z-30 shrink-0">
+  <header class="h-16 border-b border-gray-150 bg-white/90 backdrop-blur-md px-4 md:px-8 flex items-center justify-between z-30 shrink-0">
     
     <!-- Left: Brand Logo & Mobile Toggle -->
     <div class="flex items-center gap-3">
-      <button id="mobileMenuToggle" class="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+      <button id="mobileMenuToggle" class="md:hidden p-2 text-gray-600 hover:text-gray-900 rounded-xl hover:bg-gray-100">
         <i data-lucide="menu" class="w-5 h-5"></i>
       </button>
-      <div class="flex items-center gap-2.5 cursor-pointer" id="brandLogoHome">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-md text-base">
-          <span>🐒</span>
-        </div>
-        <div>
-          <span class="font-black text-sm tracking-wider text-white">MINGLE</span>
-          <span class="hidden sm:inline-block text-[9px] uppercase font-bold tracking-widest text-amber-400/90 border border-amber-500/30 px-1.5 py-0.2 rounded-md bg-amber-950/40 ml-1.5">Social</span>
-        </div>
+      <div class="flex items-center gap-1 cursor-pointer" id="brandLogoHome">
+        <span class="text-2xl font-black tracking-tight text-gray-900">mingle<span class="text-[#FF5A5F]">.</span></span>
       </div>
     </div>
 
-    <!-- Center: Global Instant User Discovery Search -->
-    <div class="flex-1 max-w-md mx-4 relative hidden sm:block">
+    <!-- Center: Global Rounded Search Bar -->
+    <div class="flex-1 max-w-lg mx-6 relative hidden sm:block">
       <div class="relative">
-        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-        <input type="text" id="topSearchInput" placeholder="🔍 Search @username or name to mingle..."
-          class="w-full pl-10 pr-4 py-1.5 bg-slate-900/80 border border-slate-800 focus:border-amber-500/60 rounded-xl text-xs text-slate-200 outline-none transition placeholder-slate-500">
+        <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input type="text" id="topSearchInput" placeholder="Search people, interests, or groups..."
+          class="w-full pl-11 pr-4 py-2.5 bg-[#F3F4F7] border border-transparent focus:border-[#FF5A5F] focus:bg-white rounded-full text-xs text-gray-900 outline-none transition placeholder-gray-400 font-medium">
       </div>
 
       <!-- Live Search Instant Results Dropdown -->
-      <div id="topSearchDropdown" class="hidden absolute top-full mt-1.5 left-0 right-0 z-40 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl p-2 backdrop-blur-xl max-h-80 overflow-y-auto custom-scrollbar">
+      <div id="topSearchDropdown" class="hidden absolute top-full mt-2 left-0 right-0 z-40 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 max-h-80 overflow-y-auto custom-scrollbar">
         <!-- Results injected via JS -->
       </div>
     </div>
 
     <!-- Right Controls: Status Selector, Sound, Theme, User Chip -->
-    <div class="flex items-center gap-2.5">
-      <!-- Mingle Status Selector -->
-      <select id="userMingleStatusSelect" class="hidden lg:block bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-xl px-2.5 py-1 outline-none cursor-pointer hover:border-slate-700">
+    <div class="flex items-center gap-3">
+      <!-- Status Selector -->
+      <select id="userMingleStatusSelect" class="hidden lg:block bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700 rounded-full px-3.5 py-1.5 outline-none cursor-pointer hover:border-gray-300">
         <option value="available">🟢 Available to chat</option>
         <option value="busy">🟠 Busy</option>
         <option value="dnd">🌙 Do not disturb</option>
       </select>
 
-      <!-- Sound Toggle -->
-      <button id="soundToggleBtn" class="p-2 text-slate-400 hover:text-amber-400 rounded-xl hover:bg-slate-900 transition" title="Toggle Sound" aria-label="Toggle Sound">
+      <!-- Notifications Bell -->
+      <button id="soundToggleBtn" class="p-2.5 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition relative" title="Toggle Sound" aria-label="Toggle Sound">
         <i id="soundIcon" data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
 
-      <!-- Theme Toggle -->
-      <button id="themeToggleBtn" class="p-2 text-slate-400 hover:text-amber-400 rounded-xl hover:bg-slate-900 transition" title="Toggle Theme" aria-label="Toggle Theme">
-        <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
-      </button>
-
       <!-- User Profile Chip -->
-      <div id="headerUserChip" class="flex items-center gap-2 pl-2 border-l border-slate-800 cursor-pointer group" title="View Profile & Settings">
+      <div id="headerUserChip" class="flex items-center gap-2 pl-2 border-l border-gray-200 cursor-pointer group" title="View Profile & Settings">
         <div class="relative">
-          <img id="headerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-7 h-7 rounded-full bg-slate-800 border border-amber-500/40 object-cover">
+          <img id="headerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 object-cover">
           <span id="headerStatusDot" class="status-indicator status-online bottom-0 right-0"></span>
         </div>
         <div class="hidden xl:block text-left">
-          <p id="headerDisplayName" class="text-xs font-bold text-slate-200 group-hover:text-amber-400 transition truncate max-w-[90px]">User</p>
-          <p id="headerUsername" class="text-[10px] text-amber-400/80 font-mono truncate max-w-[90px]">@username</p>
+          <p id="headerDisplayName" class="text-xs font-bold text-gray-900 group-hover:text-[#FF5A5F] transition truncate max-w-[100px]">User</p>
+          <p id="headerUsername" class="text-[10px] text-gray-400 font-mono truncate max-w-[100px]">@username</p>
         </div>
       </div>
     </div>
@@ -266,58 +252,56 @@
   <div class="flex flex-1 overflow-hidden relative">
 
     <!-- Mobile Sidebar Backdrop Overlay -->
-    <div id="mobileSidebarBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-15 hidden md:hidden transition-opacity"></div>
+    <div id="mobileSidebarBackdrop" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 hidden md:hidden transition-opacity"></div>
 
-    <!-- A. LEFT NAVIGATION HUB (5 Core Sections + Surprise Mingle) -->
-    <aside id="mainNavSidebar" class="w-72 bg-slate-950/95 border-r border-slate-800/80 flex flex-col z-20 transition-transform duration-300 md:translate-x-0 -translate-x-full absolute md:relative h-full shrink-0 shadow-2xl md:shadow-none">
+    <!-- A. LEFT NAVIGATION HUB (Fixed desktop sidebar) -->
+    <aside id="mainNavSidebar" class="w-72 bg-white border-r border-gray-200 flex flex-col z-20 transition-transform duration-300 md:translate-x-0 -translate-x-full absolute md:relative h-full shrink-0 shadow-lg md:shadow-none">
       
       <!-- Primary Navigation Buttons -->
-      <nav class="p-3 space-y-1 border-b border-slate-800/80">
-        <button id="navBtnHome" class="nav-hub-btn active" data-section="home">
+      <nav class="p-4 space-y-1.5 border-b border-gray-100">
+        <button id="navBtnHome" class="nav-item-btn active" data-section="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span>Home</span>
         </button>
-        <button id="navBtnChats" class="nav-hub-btn relative" data-section="chats">
-          <i data-lucide="message-circle" class="w-4 h-4"></i>
-          <span>Chats</span>
-          <span id="navChatsBadge" class="hidden absolute right-3 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold">0</span>
-        </button>
-        <button id="navBtnDiscover" class="nav-hub-btn" data-section="discover">
+        <button id="navBtnDiscover" class="nav-item-btn" data-section="discover">
           <i data-lucide="compass" class="w-4 h-4"></i>
           <span>Discover</span>
         </button>
-        <button id="navBtnOnline" class="nav-hub-btn" data-section="online">
-          <i data-lucide="radio" class="w-4 h-4"></i>
-          <span>Online People</span>
-          <span id="navOnlineBadge" class="ml-auto text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.2 rounded">0</span>
+        <button id="navBtnChats" class="nav-item-btn relative" data-section="chats">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>Messages</span>
+          <span id="navChatsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full bg-[#FF5A5F] text-white text-[10px] font-bold">0</span>
         </button>
-        <button id="navBtnMingled" class="nav-hub-btn" data-section="mingled">
+        <button id="navBtnOnline" class="nav-item-btn" data-section="online">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span>Activity & Online</span>
+          <span id="navOnlineBadge" class="ml-auto text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button id="navBtnMingled" class="nav-item-btn" data-section="mingled">
           <i data-lucide="users" class="w-4 h-4"></i>
-          <span>My Mingles</span>
-          <span id="navMingledBadge" class="ml-auto text-[10px] text-amber-400 font-mono font-bold bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.2 rounded">0</span>
+          <span>Connections</span>
+          <span id="navMingledBadge" class="ml-auto text-[10px] text-[#FF5A5F] font-bold bg-rose-50 px-2 py-0.5 rounded-full">0</span>
         </button>
       </nav>
 
-      <!-- Quick Action: Surprise Mingle Banner -->
-      <div class="p-3">
-        <div id="quickSurpriseBanner" class="p-3 rounded-2xl bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-amber-950/40 border border-amber-500/25 hover:border-amber-500/50 transition cursor-pointer flex items-center justify-between group shadow-sm">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 text-slate-950 flex items-center justify-center font-bold text-lg shadow-md">
-              🎲
-            </div>
-            <div>
-              <p class="text-xs font-bold text-amber-400 group-hover:text-amber-300">SURPRISE MINGLE</p>
-              <p class="text-[11px] text-slate-400">Meet someone new instantly</p>
+      <!-- Prominent Coral Start Mingle Button -->
+      <div class="p-4">
+        <button id="quickSurpriseBanner" class="w-full py-3 px-4 btn-coral flex items-center justify-between shadow-lg shadow-coral-500/20 group">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">🎲</span>
+            <div class="text-left">
+              <p class="text-xs font-extrabold tracking-wide">START MINGLE</p>
+              <p class="text-[10px] text-white/80 font-medium">Meet someone new instantly</p>
             </div>
           </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:translate-x-0.5 transition"></i>
-        </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-white/80 group-hover:translate-x-1 transition"></i>
+        </button>
       </div>
 
       <!-- Active Threads Quick List -->
-      <div class="flex-1 overflow-y-auto px-3 py-1 space-y-1 custom-scrollbar">
-        <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-          <span>Recent Mingles</span>
+      <div class="flex-1 overflow-y-auto px-4 py-1 space-y-1 custom-scrollbar">
+        <div class="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center justify-between">
+          <span>Recent Messages</span>
         </div>
         <div id="sidebarThreadsContainer" class="space-y-1">
           <!-- Injected via JS -->
@@ -325,214 +309,215 @@
       </div>
 
       <!-- Current User Footer Card -->
-      <div class="p-3 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between">
+      <div class="p-4 border-t border-gray-150 bg-gray-50 flex items-center justify-between">
         <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" id="footerProfileBtn">
-          <img id="footerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700">
+          <img id="footerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-9 h-9 rounded-full bg-white border border-gray-200 object-cover">
           <div class="truncate">
-            <p id="footerDisplayName" class="text-xs font-bold text-white truncate">User</p>
-            <p id="footerUsername" class="text-[10px] text-amber-400/80 font-mono truncate">@username</p>
+            <p id="footerDisplayName" class="text-xs font-bold text-gray-900 truncate">User</p>
+            <p id="footerUsername" class="text-[10px] text-gray-400 font-mono truncate">@username</p>
           </div>
         </div>
-        <button id="profileSettingsBtn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition" title="Profile Settings">
+        <button id="profileSettingsBtn" class="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-200 transition" title="Profile Settings">
           <i data-lucide="settings" class="w-4 h-4"></i>
         </button>
       </div>
 
     </aside>
 
-    <!-- B. CENTRAL DYNAMIC WORKPANE -->
-    <main class="flex-1 flex flex-col bg-[#07090D] h-full overflow-hidden relative">
+    <!-- B. CENTRAL MAIN FEED WORKPANE -->
+    <main class="flex-1 flex flex-col bg-[#F8F9FB] h-full overflow-hidden relative">
 
       <!-- ================= 1. HOME SECTION ================= -->
-      <section id="sectionHomePane" class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 custom-scrollbar">
+      <section id="sectionHomePane" class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 custom-scrollbar">
         
-        <!-- Mobile Live Stories / Online Minglers Reel -->
-        <div class="block md:hidden pb-1 -mx-1 px-1 overflow-x-auto custom-scrollbar">
-          <div class="flex items-center gap-3 min-w-max py-1" id="mobileStoriesReel">
-            <!-- Injected via JS -->
+        <!-- Instagram-Style Stories / Minglers Reel -->
+        <div class="bg-white p-4 rounded-3xl border border-gray-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Online Minglers</h3>
+            <span class="text-[11px] text-[#FF5A5F] font-bold cursor-pointer hover:underline" onclick="switchSection('online')">See All</span>
           </div>
-        </div>
-
-        <!-- Personalized Greeting Hero -->
-        <div class="relative overflow-hidden rounded-3xl p-5 sm:p-6 md:p-8 bg-gradient-to-r from-slate-900 via-slate-900/90 to-amber-950/30 border border-slate-800 shadow-xl">
-          <div class="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <h2 class="text-2xl md:text-3xl font-extrabold text-white">
-            <span>Good to see you, </span>
-            <span id="homeHeroName" class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Friend</span> 👋
-          </h2>
-          <p class="text-xs md:text-sm text-slate-400 mt-2 max-w-xl">
-            Your permanent Mingle social space. Find people by username, mingle with connections, and start chatting.
-          </p>
-
-          <!-- Quick Stats Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5 sm:mt-6">
-            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <p class="text-[10px] uppercase font-bold text-slate-400">Online Mingles</p>
-              <p id="homeStatOnlineMingles" class="text-xl font-black text-emerald-400 mt-1">0</p>
-            </div>
-            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <p class="text-[10px] uppercase font-bold text-slate-400">Total Connections</p>
-              <p id="homeStatTotalMingles" class="text-xl font-black text-amber-400 mt-1">0</p>
-            </div>
-            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 col-span-2 sm:col-span-1">
-              <p class="text-[10px] uppercase font-bold text-slate-400">Live on Platform</p>
-              <p id="homeStatTotalOnline" class="text-xl font-black text-cyan-400 mt-1">0</p>
+          <div class="overflow-x-auto custom-scrollbar -mx-2 px-2 pb-1">
+            <div class="flex items-center gap-4 min-w-max" id="mobileStoriesReel">
+              <!-- Injected via JS -->
             </div>
           </div>
         </div>
 
-        <!-- People You Mingled With (Online Now) -->
+        <!-- Greeting Hero Banner -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden">
+          <div class="relative z-10">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              <span>Good to see you, </span>
+              <span id="homeHeroName" class="text-[#FF5A5F]">Friend</span> 👋
+            </h2>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1 max-w-lg">
+              Explore suggested minglers, chat with connections in real-time, or start a surprise mingle.
+            </p>
+
+            <!-- Quick Metrics -->
+            <div class="grid grid-cols-3 gap-3 sm:gap-4 mt-6">
+              <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-[10px] uppercase font-bold text-gray-400">Online Mingles</p>
+                <p id="homeStatOnlineMingles" class="text-xl font-black text-emerald-600 mt-0.5">0</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-[10px] uppercase font-bold text-gray-400">Connections</p>
+                <p id="homeStatTotalMingles" class="text-xl font-black text-[#FF5A5F] mt-0.5">0</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-[10px] uppercase font-bold text-gray-400">Active Now</p>
+                <p id="homeStatTotalOnline" class="text-xl font-black text-indigo-600 mt-0.5">0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggested People Section -->
         <div>
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>People You Mingled With (Online Now)</span>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-extrabold text-gray-900 flex items-center gap-2">
+              <span>Suggested People to Mingle</span>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-rose-50 text-[#FF5A5F] rounded-full">New</span>
             </h3>
-            <button id="homeViewAllMingledBtn" class="text-xs text-amber-400 hover:text-amber-300 font-semibold">View All →</button>
+            <button onclick="switchSection('discover')" class="text-xs text-[#FF5A5F] hover:underline font-bold">Browse All →</button>
           </div>
-          <div id="homeOnlineMinglesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          
+          <div id="homeOnlineMinglesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Injected via JS -->
           </div>
         </div>
 
-        <!-- Discovery Callout Card -->
-        <div class="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div class="text-center md:text-left">
-            <h4 class="text-base font-bold text-white">Looking for someone to Mingle with?</h4>
-            <p class="text-xs text-slate-400 mt-1">Search by @username or browse currently active minglers.</p>
-          </div>
-          <div class="flex gap-2.5 w-full md:w-auto">
-            <button id="homeDiscoverBtn" class="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-md transition">
-              🔍 Discover People
-            </button>
-            <button id="homeSurpriseBtn" class="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5">
-              <span>🎲 Surprise Mingle</span>
-            </button>
-          </div>
-        </div>
       </section>
 
       <!-- ================= 2. CHATS SECTION (ACTIVE 1-ON-1 CONVERSATION) ================= -->
-      <section id="sectionChatsPane" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+      <section id="sectionChatsPane" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-white">
         
         <!-- Active Chat Header -->
-        <header class="h-14 border-b border-slate-800/80 px-3 sm:px-4 md:px-6 flex items-center justify-between bg-slate-950/60 backdrop-blur-md z-10 shrink-0">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <!-- Mobile Chat Back Button -->
-            <button id="chatMobileBackBtn" class="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-white rounded-lg transition" title="Back to Chats">
+        <header class="h-16 border-b border-gray-200 px-4 md:px-6 flex items-center justify-between bg-white/95 backdrop-blur-md z-10 shrink-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <!-- Mobile Back Button -->
+            <button id="chatMobileBackBtn" class="md:hidden p-2 -ml-1 text-gray-600 hover:text-gray-900 rounded-xl hover:bg-gray-100" title="Back to Chats">
               <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </button>
             
             <div class="relative shrink-0 cursor-pointer" id="chatPartnerAvatarTrigger">
-              <img id="chatPartnerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=partner" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 object-cover">
+              <img id="chatPartnerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=partner" class="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 object-cover">
               <span id="chatPartnerStatusDot" class="status-indicator status-online bottom-0 right-0"></span>
             </div>
             <div class="min-w-0 cursor-pointer" id="chatPartnerNameTrigger">
               <div class="flex items-center gap-2">
-                <h2 id="chatPartnerDisplayName" class="text-sm font-bold text-white truncate">User</h2>
-                <span id="chatPartnerUsername" class="text-[10px] text-amber-400/80 font-mono truncate">@username</span>
-                <span id="chatMingleStateBadge" class="hidden sm:inline-block text-[10px] px-2 py-0.2 rounded-full font-semibold border">✓ Mingled</span>
+                <h2 id="chatPartnerDisplayName" class="text-sm font-bold text-gray-900 truncate">User</h2>
+                <span id="chatPartnerUsername" class="text-[11px] text-gray-400 font-mono truncate">@username</span>
+                <span id="chatMingleStateBadge" class="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold border bg-rose-50 text-[#FF5A5F] border-rose-200">✓ Connected</span>
               </div>
-              <p id="chatPartnerBio" class="text-[11px] text-slate-400 truncate max-w-sm">Online • Available to chat</p>
+              <p id="chatPartnerBio" class="text-[11px] text-gray-500 truncate max-w-sm">Online • Ready to chat</p>
             </div>
           </div>
 
           <!-- Chat Header Actions -->
           <div class="flex items-center gap-2 shrink-0">
-            <button id="chatToggleMingleBtn" class="px-3 py-1 rounded-xl text-xs font-bold transition border"></button>
-            <button id="chatProfileToggleBtn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition" title="View Profile">
+            <button id="chatToggleMingleBtn" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition border"></button>
+            <button id="chatProfileToggleBtn" class="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-100 transition" title="View Profile">
               <i data-lucide="user" class="w-4 h-4"></i>
             </button>
-            <button id="clearChatViewBtn" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-900 transition" title="Clear View">
+            <button id="clearChatViewBtn" class="p-2 text-gray-500 hover:text-rose-500 rounded-xl hover:bg-gray-100 transition" title="Clear View">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
         </header>
 
-        <!-- Message Feed Stream -->
-        <div id="chatMessagesStream" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+        <!-- Message Feed Stream (iMessage Style) -->
+        <div id="chatMessagesStream" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3.5 bg-[#F8F9FB] custom-scrollbar">
           <!-- Messages injected via JS -->
         </div>
 
         <!-- Live Typing Indicator -->
-        <div id="chatTypingIndicator" class="px-6 py-1 text-xs text-amber-400 font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-6 shrink-0">
+        <div id="chatTypingIndicator" class="px-6 py-1 text-xs text-[#FF5A5F] font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-6 shrink-0 bg-[#F8F9FB]">
           <div class="flex space-x-1 items-center">
-            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"></span>
-            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:0.15s]"></span>
-            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:0.3s]"></span>
+            <span class="w-1.5 h-1.5 bg-[#FF5A5F] rounded-full animate-bounce"></span>
+            <span class="w-1.5 h-1.5 bg-[#FF5A5F] rounded-full animate-bounce [animation-delay:0.15s]"></span>
+            <span class="w-1.5 h-1.5 bg-[#FF5A5F] rounded-full animate-bounce [animation-delay:0.3s]"></span>
           </div>
           <span id="chatTypingText">User is typing...</span>
         </div>
 
         <!-- Attachment Preview Bar -->
-        <div id="chatAttachmentPreviewBar" class="hidden px-6 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between shrink-0">
+        <div id="chatAttachmentPreviewBar" class="hidden px-6 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <div id="attachmentThumbContainer" class="w-10 h-10 rounded-lg bg-slate-800 border border-amber-500/40 flex items-center justify-center overflow-hidden">
+            <div id="attachmentThumbContainer" class="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
               <img id="attachmentImagePreview" src="" class="w-full h-full object-cover hidden">
-              <i id="attachmentDocIcon" data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+              <i id="attachmentDocIcon" data-lucide="file-text" class="w-5 h-5 text-[#FF5A5F]"></i>
             </div>
             <div class="text-xs">
-              <p id="attachmentNameText" class="font-bold text-slate-200 truncate max-w-xs">File</p>
-              <p id="attachmentSizeText" class="text-slate-400 text-[10px]">0 KB</p>
+              <p id="attachmentNameText" class="font-bold text-gray-900 truncate max-w-xs">File</p>
+              <p id="attachmentSizeText" class="text-gray-500 text-[10px]">0 KB</p>
             </div>
           </div>
-          <button id="cancelChatAttachmentBtn" class="p-1.5 text-rose-400 hover:bg-rose-950/40 rounded-lg transition">
+          <button id="cancelChatAttachmentBtn" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
 
         <!-- Emoji Picker Drawer -->
-        <div id="chatEmojiDrawer" class="hidden absolute bottom-20 left-6 z-30 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-3 shadow-2xl w-80 backdrop-blur-2xl">
-          <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-2 px-1">
-            <span>Mingle Emojis 🐒</span>
+        <div id="chatEmojiDrawer" class="hidden absolute bottom-20 left-6 z-30 bg-white border border-gray-200 rounded-3xl p-3.5 shadow-2xl w-80">
+          <div class="flex items-center justify-between text-xs font-bold text-gray-500 mb-2 px-1">
+            <span>Quick Emojis ✨</span>
           </div>
           <div class="grid grid-cols-7 gap-1.5 text-xl select-none" id="chatEmojiGrid">
-            <span class="emoji-btn">😀</span><span class="emoji-btn">😂</span><span class="emoji-btn">😍</span><span class="emoji-btn">😎</span><span class="emoji-btn">🔥</span><span class="emoji-btn">🚀</span><span class="emoji-btn">🎉</span>
-            <span class="emoji-btn">👍</span><span class="emoji-btn">❤️</span><span class="emoji-btn">👀</span><span class="emoji-btn">🙌</span><span class="emoji-btn">💯</span><span class="emoji-btn">😭</span><span class="emoji-btn">🤔</span>
-            <span class="emoji-btn">👋</span><span class="emoji-btn">⚡</span><span class="emoji-btn">✨</span><span class="emoji-btn">☕</span><span class="emoji-btn">💻</span><span class="emoji-btn">🍕</span><span class="emoji-btn">🎮</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">😀</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">😂</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">😍</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">😎</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">🔥</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">🚀</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">🎉</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">👍</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">❤️</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">✨</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">🙌</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">💯</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">☕</span>
+            <span class="emoji-btn hover:scale-125 transition cursor-pointer p-1">👋</span>
           </div>
         </div>
 
         <!-- Chat Input Form -->
-        <div class="p-3 md:px-6 bg-slate-950/80 border-t border-slate-800/80 shrink-0">
+        <div class="p-3 md:px-6 bg-white border-t border-gray-200 shrink-0">
           <form id="activeChatForm" class="flex items-center gap-2">
             <input type="file" id="chatFileInput" accept="image/*,.pdf,.txt,.doc,.docx" class="hidden">
 
-            <button type="button" id="chatAttachBtn" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl transition" title="Attach Image or Document">
+            <button type="button" id="chatAttachBtn" class="p-2.5 text-gray-400 hover:text-[#FF5A5F] hover:bg-gray-100 rounded-full transition" title="Attach Image or Document">
               <i data-lucide="paperclip" class="w-5 h-5"></i>
             </button>
-            <button type="button" id="chatEmojiToggleBtn" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl transition" title="Insert Emoji">
+            <button type="button" id="chatEmojiToggleBtn" class="p-2.5 text-gray-400 hover:text-[#FF5A5F] hover:bg-gray-100 rounded-full transition" title="Insert Emoji">
               <i data-lucide="smile" class="w-5 h-5"></i>
             </button>
 
             <div class="flex-1 relative">
-              <input type="text" id="chatTextInput" autocomplete="off" placeholder="Type a message to mingle... (Enter to send)"
-                class="w-full py-3 px-4 bg-slate-900/90 border border-slate-800 focus:border-amber-500/80 rounded-2xl outline-none text-sm text-white placeholder-slate-500 transition">
+              <input type="text" id="chatTextInput" autocomplete="off" placeholder="Write a message... (Press Enter to send)"
+                class="w-full py-3 px-4 bg-[#F3F4F7] border border-transparent focus:border-[#FF5A5F] focus:bg-white rounded-full outline-none text-xs sm:text-sm text-gray-900 placeholder-gray-400 transition font-medium">
             </div>
 
-            <button type="submit" class="p-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center shrink-0">
-              <i data-lucide="send" class="w-5 h-5 stroke-[2.5]"></i>
+            <button type="submit" class="p-3 btn-coral text-white rounded-full shadow-md flex items-center justify-center shrink-0">
+              <i data-lucide="send" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </form>
         </div>
       </section>
 
       <!-- ================= 3. DISCOVER SECTION ================= -->
-      <section id="sectionDiscoverPane" class="hidden flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
-        <div class="max-w-2xl mx-auto space-y-6">
-          <div class="text-center space-y-2">
-            <h2 class="text-2xl font-extrabold text-white flex items-center justify-center gap-2">
-              <span>Find People to Mingle</span>
-              <span class="text-amber-400">🐒</span>
-            </h2>
-            <p class="text-xs text-slate-400">Search permanent usernames or display names across the network</p>
+      <section id="sectionDiscoverPane" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 custom-scrollbar">
+        <div class="max-w-3xl mx-auto space-y-6">
+          <div class="text-center space-y-1">
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Discover People</h2>
+            <p class="text-xs text-gray-500">Find new connections by @username, name, or interests</p>
           </div>
 
           <!-- Search Box -->
           <div class="relative">
-            <i data-lucide="search" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="discoverSearchInput" placeholder="Search by @username or Name..."
-              class="w-full pl-12 pr-4 py-3.5 bg-slate-900 border border-slate-700/80 focus:border-amber-500 rounded-2xl outline-none text-sm text-white placeholder-slate-500 shadow-xl transition">
+            <i data-lucide="search" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="discoverSearchInput" placeholder="Search by @username, name, or #interests..."
+              class="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 focus:border-[#FF5A5F] rounded-2xl outline-none text-sm text-gray-900 placeholder-gray-400 shadow-sm transition">
           </div>
 
           <!-- Discover Results Container -->
@@ -543,112 +528,112 @@
       </section>
 
       <!-- ================= 4. ONLINE PEOPLE SECTION ================= -->
-      <section id="sectionOnlinePane" class="hidden flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
+      <section id="sectionOnlinePane" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 custom-scrollbar">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>People Online Now</span>
+            <h2 class="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Online Now</span>
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Active minglers available on the platform right now</p>
+            <p class="text-xs text-gray-500 mt-0.5">Active users ready to chat right now</p>
           </div>
-          <button id="refreshOnlineBtn" class="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition" title="Refresh list">
+          <button id="refreshOnlineBtn" class="p-2.5 bg-white border border-gray-200 text-gray-600 hover:text-gray-900 rounded-xl shadow-sm transition" title="Refresh list">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           </button>
         </div>
 
-        <div id="onlinePeopleGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div id="onlinePeopleGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Injected via JS -->
         </div>
       </section>
 
-      <!-- ================= 5. MY MINGLES SECTION ================= -->
-      <section id="sectionMingledPane" class="hidden flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
+      <!-- ================= 5. MY CONNECTIONS SECTION ================= -->
+      <section id="sectionMingledPane" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 custom-scrollbar">
         <div>
-          <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-            <span>Your Mingles Network</span>
-            <span class="text-xs font-mono text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full" id="mingledCountPill">0</span>
+          <h2 class="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+            <span>Your Connections</span>
+            <span class="text-xs font-bold text-[#FF5A5F] bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full" id="mingledCountPill">0</span>
           </h2>
-          <p class="text-xs text-slate-400 mt-0.5">People you have connected with permanently</p>
+          <p class="text-xs text-gray-500 mt-0.5">People you are connected with</p>
         </div>
 
-        <div id="mingledNetworkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div id="mingledNetworkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Injected via JS -->
         </div>
       </section>
 
       <!-- ================= 6. SURPRISE MINGLE SECTION ================= -->
-      <section id="sectionSurprisePane" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-b from-[#07090D] via-[#0e1424] to-[#07090D]">
-        <header class="h-14 border-b border-slate-800/80 px-6 flex items-center justify-between bg-slate-950/70 backdrop-blur-md shrink-0">
+      <section id="sectionSurprisePane" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-white">
+        <header class="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shrink-0">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
+            <div class="w-9 h-9 rounded-2xl bg-rose-50 text-[#FF5A5F] flex items-center justify-center font-bold text-lg">
               🎲
             </div>
             <div>
-              <h2 id="surpriseHeaderTitle" class="text-sm font-bold text-white">Surprise Mingle</h2>
-              <p id="surpriseHeaderSubtitle" class="text-[11px] text-slate-400">Meet someone new on the network</p>
+              <h2 id="surpriseHeaderTitle" class="text-sm font-bold text-gray-900">Surprise Mingle</h2>
+              <p id="surpriseHeaderSubtitle" class="text-[11px] text-gray-500">Connecting you with an active user</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2">
-            <button id="surpriseMingleNowBtn" class="hidden px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs font-black shadow transition">
-              + MINGLE WITH STRANGER
+            <button id="surpriseMingleNowBtn" class="hidden px-4 py-2 rounded-xl btn-coral text-white text-xs font-bold shadow transition">
+              + CONNECT WITH MATCH
             </button>
-            <button id="surpriseNextBtn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5 transition">
+            <button id="surpriseNextBtn" class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition">
               <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
               <span>Next</span>
             </button>
-            <button id="surpriseExitBtn" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold transition">
+            <button id="surpriseExitBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition">
               Exit
             </button>
           </div>
         </header>
 
         <!-- A. Surprise Radar Searching State -->
-        <div id="surpriseRadarState" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div id="surpriseRadarState" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#F8F9FB]">
           <div class="relative w-36 h-36 flex items-center justify-center mb-6">
-            <div class="absolute inset-0 rounded-full border border-amber-500/20 animate-ping"></div>
-            <div class="absolute inset-4 rounded-full border border-orange-500/30 animate-pulse"></div>
-            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/40 text-3xl">
-              🐒
+            <div class="absolute inset-0 rounded-full border-2 border-rose-300 animate-ping opacity-50"></div>
+            <div class="absolute inset-4 rounded-full border-2 border-rose-400 animate-pulse opacity-60"></div>
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF5A5F] to-[#FF3366] flex items-center justify-center shadow-xl shadow-coral-500/40 text-3xl">
+              🎲
             </div>
           </div>
-          <h3 class="text-xl font-black text-white mb-2">Looking for an online mingler...</h3>
-          <p class="text-xs text-slate-400 max-w-sm mb-6">Connecting you with an active user right now.</p>
-          <button id="cancelSurpriseSearchBtn" class="px-5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800 transition">
-            Cancel
+          <h3 class="text-xl font-extrabold text-gray-900 mb-1">Looking for someone to Mingle...</h3>
+          <p class="text-xs text-gray-500 max-w-sm mb-6">Finding an online match right now.</p>
+          <button id="cancelSurpriseSearchBtn" class="px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 shadow-sm transition">
+            Cancel Search
           </button>
         </div>
 
         <!-- B. Surprise Active Chat State -->
         <div id="surpriseActiveChatState" class="hidden flex-1 flex flex-col h-full overflow-hidden">
-          <div class="p-3 bg-amber-950/25 border-b border-amber-500/20 flex items-center justify-between px-6">
+          <div class="p-3.5 bg-rose-50/50 border-b border-rose-100 flex items-center justify-between px-6">
             <div class="flex items-center gap-3">
-              <img id="surprisePartnerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=surprise" class="w-9 h-9 rounded-full bg-slate-800 border border-amber-500/40">
+              <img id="surprisePartnerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=surprise" class="w-9 h-9 rounded-full bg-white border border-gray-200">
               <div>
-                <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                <p class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                   <span id="surprisePartnerName">Stranger</span>
-                  <span class="text-[10px] text-amber-400/80 font-mono" id="surprisePartnerUsername">@username</span>
+                  <span class="text-[10px] text-gray-400 font-mono" id="surprisePartnerUsername">@username</span>
                 </p>
-                <p id="surprisePartnerBio" class="text-[10px] text-amber-300/80">Connected via Surprise Mingle</p>
+                <p id="surprisePartnerBio" class="text-[10px] text-[#FF5A5F] font-medium">Connected via Surprise Mingle</p>
               </div>
             </div>
-            <span class="text-[10px] text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">✨ SURPRISE MINGLE</span>
+            <span class="text-[10px] text-[#FF5A5F] bg-white border border-rose-200 px-2.5 py-0.5 rounded-full font-bold">✨ LIVE MATCH</span>
           </div>
 
-          <div id="surpriseMessagesStream" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar"></div>
+          <div id="surpriseMessagesStream" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3.5 bg-[#F8F9FB] custom-scrollbar"></div>
 
-          <div id="surpriseTypingStrip" class="px-6 py-1 text-xs text-amber-400 font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-6 shrink-0">
-            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"></span>
-            <span>Stranger is typing...</span>
+          <div id="surpriseTypingStrip" class="px-6 py-1 text-xs text-[#FF5A5F] font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-6 shrink-0 bg-[#F8F9FB]">
+            <span class="w-1.5 h-1.5 bg-[#FF5A5F] rounded-full animate-bounce"></span>
+            <span>Partner is typing...</span>
           </div>
 
-          <div class="p-3 md:px-6 bg-slate-950/90 border-t border-slate-800 shrink-0">
+          <div class="p-3 md:px-6 bg-white border-t border-gray-200 shrink-0">
             <form id="surpriseChatForm" class="flex items-center gap-2">
-              <input type="text" id="surpriseTextInput" autocomplete="off" placeholder="Say something friendly to your surprise match..."
-                class="flex-1 py-3 px-4 bg-slate-900 border border-slate-700/80 focus:border-amber-500 rounded-2xl outline-none text-sm text-white placeholder-slate-500 transition">
-              <button type="submit" class="p-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center shrink-0">
-                <i data-lucide="send" class="w-5 h-5 stroke-[2.5]"></i>
+              <input type="text" id="surpriseTextInput" autocomplete="off" placeholder="Say hello to your match..."
+                class="flex-1 py-3 px-4 bg-[#F3F4F7] border border-transparent focus:border-[#FF5A5F] focus:bg-white rounded-full outline-none text-xs sm:text-sm text-gray-900 placeholder-gray-400 font-medium transition">
+              <button type="submit" class="p-3 btn-coral text-white rounded-full shadow-md flex items-center justify-center shrink-0">
+                <i data-lucide="send" class="w-4 h-4 stroke-[2.5]"></i>
               </button>
             </form>
           </div>
@@ -657,143 +642,198 @@
 
     </main>
 
-    <!-- C. RIGHT PROFILE & SETTINGS DRAWER (Collapsible) -->
-    <aside id="rightProfileDrawer" class="w-80 bg-slate-950/95 border-l border-slate-800/80 hidden flex-col z-10 shrink-0">
-      <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Profile Details</h3>
-        <button id="closeRightDrawerBtn" class="p-1 text-slate-500 hover:text-white rounded">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-5 overflow-y-auto custom-scrollbar flex-1 text-center">
-        <!-- Target Profile Card -->
-        <div>
-          <div class="relative inline-block mb-3">
-            <img id="drawerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-20 h-20 rounded-3xl bg-slate-800 border-2 border-amber-500/40 object-cover shadow-xl">
-            <span id="drawerStatusDot" class="status-indicator status-online bottom-0 right-0"></span>
-          </div>
-          <h4 id="drawerDisplayName" class="text-base font-extrabold text-white">User</h4>
-          <p id="drawerUsername" class="text-xs font-mono text-amber-400 font-semibold mt-0.5">@username</p>
-          <p id="drawerLastSeen" class="text-[11px] text-slate-400 mt-1">Online</p>
-        </div>
-
-        <!-- Mingle Action Button in Drawer -->
-        <div id="drawerActionRow" class="flex gap-2 justify-center">
-          <button id="drawerMingleBtn" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition shadow"></button>
-          <button id="drawerMessageBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">
-            Message
+    <!-- C. RIGHT SIDEBAR / PROFILE DRAWER -->
+    <aside id="rightSidebar" class="w-80 bg-white border-l border-gray-200 hidden xl:flex flex-col z-10 shrink-0">
+      
+      <!-- Right Profile Drawer View (When Profile Clicked) -->
+      <div id="rightProfileDrawer" class="hidden flex-col h-full">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500">Profile Details</h3>
+          <button id="closeRightDrawerBtn" class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
 
-        <!-- About Box -->
-        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-left">
-          <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">About</p>
-          <p id="drawerBio" class="text-xs text-slate-300 leading-relaxed">Ready to chat & mingle!</p>
-        </div>
-
-        <!-- Connection Stats -->
-        <div class="grid grid-cols-2 gap-2 text-left">
-          <div class="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <p class="text-[10px] uppercase font-bold text-slate-400">Total Mingles</p>
-            <p id="drawerMinglesCount" class="text-base font-black text-amber-400 mt-0.5">0</p>
+        <div class="p-5 space-y-5 overflow-y-auto custom-scrollbar flex-1 text-center">
+          <div>
+            <div class="relative inline-block mb-3">
+              <img id="drawerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-20 h-20 rounded-3xl bg-gray-50 border-2 border-gray-200 object-cover shadow-sm">
+              <span id="drawerStatusDot" class="status-indicator status-online bottom-0 right-0"></span>
+            </div>
+            <h4 id="drawerDisplayName" class="text-base font-extrabold text-gray-900">User</h4>
+            <p id="drawerUsername" class="text-xs font-mono text-[#FF5A5F] font-semibold mt-0.5">@username</p>
+            <p id="drawerLastSeen" class="text-[11px] text-gray-400 mt-1">Online</p>
           </div>
-          <div class="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <p class="text-[10px] uppercase font-bold text-slate-400">Mingle Status</p>
-            <p id="drawerMingleStatusText" class="text-xs font-bold text-emerald-400 mt-1">Available</p>
-          </div>
-        </div>
 
-        <!-- Shared Media Gallery -->
-        <div class="text-left">
-          <p class="text-[10px] uppercase font-bold text-slate-400 mb-2 flex items-center justify-between">
-            <span>Shared Media</span>
-            <span id="drawerMediaCount" class="text-[10px] text-amber-400 font-mono">0</span>
-          </p>
-          <div id="drawerMediaGrid" class="grid grid-cols-3 gap-2">
-            <div class="col-span-3 text-center py-4 text-xs text-slate-500">No media shared yet</div>
+          <div id="drawerActionRow" class="flex gap-2 justify-center">
+            <button id="drawerMingleBtn" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition shadow"></button>
+            <button id="drawerMessageBtn" class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-bold transition">
+              Message
+            </button>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 text-left">
+            <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">About</p>
+            <p id="drawerBio" class="text-xs text-gray-700 leading-relaxed">Ready to chat & mingle!</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-left">
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <p class="text-[10px] uppercase font-bold text-gray-400">Total Mingles</p>
+              <p id="drawerMinglesCount" class="text-base font-black text-gray-900 mt-0.5">0</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <p class="text-[10px] uppercase font-bold text-gray-400">Status</p>
+              <p id="drawerMingleStatusText" class="text-xs font-bold text-emerald-600 mt-1">Available</p>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Right Community & Events Widget (Default View) -->
+      <div id="rightCommunityWidgets" class="flex-1 flex flex-col p-5 space-y-6 overflow-y-auto custom-scrollbar">
+        
+        <!-- Community Events -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-gray-400">Community Hangouts</h4>
+            <span class="text-[10px] text-[#FF5A5F] font-bold">Live</span>
+          </div>
+          <div class="space-y-2.5">
+            <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-gray-200 transition cursor-pointer">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-900">☕ Weekend Tech Chai</span>
+                <span class="text-[9px] font-bold px-2 py-0.5 bg-rose-50 text-[#FF5A5F] rounded-full">Sun, 5 PM</span>
+              </div>
+              <p class="text-[11px] text-gray-500 mt-1">Informal chat with designers & devs</p>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-gray-200 transition cursor-pointer">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-900">🎨 UI/UX Design Jam</span>
+                <span class="text-[9px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full">Today</span>
+              </div>
+              <p class="text-[11px] text-gray-500 mt-1">Feedback & critique session</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Popular Topics & Tags -->
+        <div>
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-gray-400 mb-3">Popular Topics</h4>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="px-3 py-1 bg-gray-100 hover:bg-rose-50 hover:text-[#FF5A5F] text-gray-700 text-xs font-semibold rounded-full cursor-pointer transition">#Startups</span>
+            <span class="px-3 py-1 bg-gray-100 hover:bg-rose-50 hover:text-[#FF5A5F] text-gray-700 text-xs font-semibold rounded-full cursor-pointer transition">#Designers</span>
+            <span class="px-3 py-1 bg-gray-100 hover:bg-rose-50 hover:text-[#FF5A5F] text-gray-700 text-xs font-semibold rounded-full cursor-pointer transition">#Bangalore</span>
+            <span class="px-3 py-1 bg-gray-100 hover:bg-rose-50 hover:text-[#FF5A5F] text-gray-700 text-xs font-semibold rounded-full cursor-pointer transition">#Music</span>
+            <span class="px-3 py-1 bg-gray-100 hover:bg-rose-50 hover:text-[#FF5A5F] text-gray-700 text-xs font-semibold rounded-full cursor-pointer transition">#Coffee</span>
+          </div>
+        </div>
+
+      </div>
+
     </aside>
 
   </div>
 
-  <!-- 4. PROFILE & PRIVACY SETTINGS MODAL -->
-  <div id="profileSettingsModal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center p-4 backdrop-blur-md">
-    <div class="glass-panel w-full max-w-md p-6 rounded-3xl border border-slate-700 shadow-2xl text-left space-y-4 relative">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <span>⚙️ Settings & Privacy</span>
+  <!-- 4. MOBILE APP BOTTOM NAVIGATION BAR -->
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-gray-200 backdrop-blur-xl px-2 py-1.5 flex items-center justify-around">
+    <button id="mobileNavHome" class="mobile-tab-btn active" data-section="home">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold">Home</span>
+    </button>
+    <button id="mobileNavDiscover" class="mobile-tab-btn" data-section="discover">
+      <i data-lucide="compass" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold">Discover</span>
+    </button>
+    <button id="mobileNavSurprise" class="flex flex-col items-center justify-center -mt-6 p-3 rounded-full btn-coral text-white shadow-xl shadow-coral-500/40 border-4 border-white transform active:scale-95 transition" data-section="surprise" title="Surprise Mingle">
+      <span class="text-xl leading-none">🎲</span>
+    </button>
+    <button id="mobileNavChats" class="mobile-tab-btn relative" data-section="chats">
+      <i data-lucide="message-circle" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold">Chats</span>
+      <span id="mobileNavChatsBadge" class="hidden absolute top-0.5 right-2 px-1.5 py-0.2 rounded-full bg-[#FF5A5F] text-white text-[8px] font-bold">0</span>
+    </button>
+    <button id="mobileNavProfile" class="mobile-tab-btn" data-section="profile">
+      <img id="mobileNavAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-5 h-5 rounded-full object-cover border border-gray-200">
+      <span class="text-[10px] font-bold">Profile</span>
+    </button>
+  </nav>
+
+  <!-- 5. PROFILE & PRIVACY SETTINGS MODAL -->
+  <div id="profileSettingsModal" class="fixed inset-0 z-50 bg-black/40 hidden items-center justify-center p-4 backdrop-blur-md">
+    <div class="bg-white w-full max-w-md p-6 sm:p-7 rounded-3xl border border-gray-200 shadow-2xl text-left space-y-4 relative">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h3 class="text-base font-extrabold text-gray-900 flex items-center gap-2">
+          <span>⚙️ Settings & Profile</span>
         </h3>
-        <button id="closeSettingsModalBtn" class="p-1 text-slate-400 hover:text-white rounded">
+        <button id="closeSettingsModalBtn" class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <form id="updateProfileForm" class="space-y-4">
         <!-- Change Profile Picture in Settings -->
-        <div class="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="flex items-center gap-3.5 p-3 rounded-2xl bg-gray-50 border border-gray-100">
           <div class="relative group cursor-pointer" id="settingsPhotoContainer">
-            <img id="settingsPhotoPreview" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-14 h-14 rounded-full object-cover bg-slate-800 border border-amber-500/40">
-            <div class="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] text-amber-300 font-bold transition">
+            <img id="settingsPhotoPreview" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-14 h-14 rounded-full object-cover bg-white border border-gray-200">
+            <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] text-white font-bold transition">
               Change
             </div>
           </div>
           <input type="file" id="settingsPhotoUploadInput" accept="image/*" class="hidden">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-slate-200">Profile Photo</p>
-            <button type="button" id="settingsUploadPhotoBtn" class="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 mt-1">
+            <p class="text-xs font-bold text-gray-900">Profile Photo</p>
+            <button type="button" id="settingsUploadPhotoBtn" class="text-xs text-[#FF5A5F] hover:underline font-bold flex items-center gap-1 mt-1">
               <i data-lucide="camera" class="w-3.5 h-3.5"></i> Upload New Photo
             </button>
           </div>
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Permanent Username</label>
-          <div class="px-3.5 py-2.5 bg-slate-900/60 border border-slate-800 rounded-xl text-xs font-mono text-amber-400 font-bold flex items-center justify-between">
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Username</label>
+          <div class="px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono text-[#FF5A5F] font-bold flex items-center justify-between">
             <span id="settingsModalUsername">@username</span>
-            <span class="text-[10px] text-slate-500 font-sans">Permanent ID</span>
+            <span class="text-[10px] text-gray-400 font-sans">Permanent ID</span>
           </div>
         </div>
 
         <div>
-          <label for="settingsDisplayNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Display Name</label>
+          <label for="settingsDisplayNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Display Name</label>
           <input type="text" id="settingsDisplayNameInput" required maxlength="30"
-            class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white outline-none focus:border-amber-500">
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:border-[#FF5A5F] focus:bg-white font-medium">
         </div>
 
         <div>
-          <label for="settingsBioInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Bio</label>
+          <label for="settingsBioInput" class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Bio</label>
           <input type="text" id="settingsBioInput" maxlength="80"
-            class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white outline-none focus:border-amber-500">
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:border-[#FF5A5F] focus:bg-white font-medium">
         </div>
 
         <!-- Privacy & Discovery Toggles -->
-        <div class="pt-2 border-t border-slate-800 space-y-2.5">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Discovery & Privacy</p>
+        <div class="pt-2 border-t border-gray-100 space-y-2.5">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Discovery & Privacy</p>
           
           <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-xs text-slate-300">Show Online Status</span>
-            <input type="checkbox" id="settingShowOnlineStatus" class="w-4 h-4 accent-amber-500">
+            <span class="text-xs text-gray-700 font-medium">Show Online Status</span>
+            <input type="checkbox" id="settingShowOnlineStatus" class="w-4 h-4 accent-[#FF5A5F]">
           </label>
 
           <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-xs text-slate-300">Allow Surprise Mingle</span>
-            <input type="checkbox" id="settingAllowSurpriseMingle" class="w-4 h-4 accent-amber-500">
+            <span class="text-xs text-gray-700 font-medium">Allow Surprise Mingle</span>
+            <input type="checkbox" id="settingAllowSurpriseMingle" class="w-4 h-4 accent-[#FF5A5F]">
           </label>
 
           <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-xs text-slate-300">Allow Messages from Non-Mingles</span>
-            <input type="checkbox" id="settingAllowNonMingleMessages" class="w-4 h-4 accent-amber-500">
+            <span class="text-xs text-gray-700 font-medium">Allow Messages from Non-Connections</span>
+            <input type="checkbox" id="settingAllowNonMingleMessages" class="w-4 h-4 accent-[#FF5A5F]">
           </label>
         </div>
 
         <div class="flex gap-2 pt-3">
-          <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs rounded-xl shadow transition">
+          <button type="submit" class="flex-1 py-3 btn-coral text-white font-bold text-xs rounded-xl shadow transition">
             Save Changes
           </button>
-          <button type="button" id="switchAccountBtn" class="px-4 py-2.5 bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs rounded-xl border border-rose-500/30 transition">
+          <button type="button" id="switchAccountBtn" class="px-4 py-3 bg-gray-100 hover:bg-rose-50 text-gray-700 hover:text-rose-600 font-bold text-xs rounded-xl transition">
             Switch Account
           </button>
         </div>
@@ -802,36 +842,12 @@
   </div>
 
   <!-- LIGHTBOX MODAL FOR IMAGES -->
-  <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 backdrop-blur cursor-pointer">
+  <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4 backdrop-blur cursor-pointer">
     <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
-      <img id="lightboxImageElement" src="" class="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-slate-700">
-      <p class="text-xs text-slate-400 mt-2">Click anywhere to close</p>
+      <img id="lightboxImageElement" src="" class="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-gray-700">
+      <p class="text-xs text-gray-300 mt-2">Click anywhere to close</p>
     </div>
   </div>
-
-  <!-- 5. MOBILE APP BOTTOM NAVIGATION BAR (Fixed for mobile devices) -->
-  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800/90 backdrop-blur-2xl px-2 py-1.5 flex items-center justify-around">
-    <button id="mobileNavHome" class="mobile-tab-btn active flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="home">
-      <i data-lucide="home" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold">Home</span>
-    </button>
-    <button id="mobileNavChats" class="mobile-tab-btn relative flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="chats">
-      <i data-lucide="message-circle" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold">Chats</span>
-      <span id="mobileNavChatsBadge" class="hidden absolute top-0 right-2 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[8px] font-bold">0</span>
-    </button>
-    <button id="mobileNavSurprise" class="mobile-tab-btn flex flex-col items-center justify-center -mt-5 p-2.5 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 text-slate-950 shadow-xl shadow-amber-500/40 border-2 border-slate-950 transform active:scale-95 transition" data-section="surprise" title="Surprise Mingle">
-      <span class="text-xl leading-none">🎲</span>
-    </button>
-    <button id="mobileNavOnline" class="mobile-tab-btn flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="online">
-      <i data-lucide="radio" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold">Online</span>
-    </button>
-    <button id="mobileNavProfile" class="mobile-tab-btn flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="profile">
-      <img id="mobileNavAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-5 h-5 rounded-full object-cover border border-amber-500/40">
-      <span class="text-[9px] font-bold">Profile</span>
-    </button>
-  </nav>
 
   <!-- Socket.io Client (with CDN fallback) -->
   <script src="/socket.io/socket.io.js"></script>
@@ -844,3 +860,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+

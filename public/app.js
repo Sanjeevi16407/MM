@@ -386,9 +386,25 @@ function randomizeAvatars() {
 
 // 6. SOCKET.IO EVENTS & SYNCHRONIZATION
 function initSocket() {
-  state.socket = io({
+  if (state.socket) return;
+  const SERVER_URL = (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) 
+    ? window.location.origin 
+    : 'http://localhost:3000';
+
+  state.socket = io(SERVER_URL, {
+    transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10
+    reconnectionAttempts: 50,
+    reconnectionDelay: 500,
+    timeout: 10000
+  });
+
+  state.socket.on('connect', () => {
+    console.log('✅ Socket connected to Mingle server:', state.socket.id);
+  });
+
+  state.socket.on('connect_error', (err) => {
+    console.warn('⚠️ Socket connection error:', err);
   });
 
   // Real-time presence change from network

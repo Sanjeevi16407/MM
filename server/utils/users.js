@@ -27,7 +27,7 @@ function verifyPassword(password, storedHash, storedSalt) {
 
 function normalizeUsername(username) {
   if (typeof username !== 'string') return '';
-  return username.trim().toLowerCase().replace(/^@/, '');
+  return username.trim().toLowerCase().replace(/^@+/, '').trim();
 }
 
 function checkUsernameAvailable(username) {

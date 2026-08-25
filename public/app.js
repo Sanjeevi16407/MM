@@ -2,6 +2,31 @@
  * MINGLE 🐒 — Social Discovery & Real-Time Messaging Engine
  */
 
+function getServerUrl() {
+  if (typeof window === 'undefined') return 'http://localhost:3000';
+  if (window.MINGLE_BACKEND_URL) return window.MINGLE_BACKEND_URL;
+  const stored = localStorage.getItem('mingle_backend_url');
+  if (stored) return stored;
+
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || 
+                  hostname === '127.0.0.1' || 
+                  hostname.startsWith('192.168.') || 
+                  hostname.startsWith('10.');
+  if (isLocal) {
+    return window.location.origin;
+  }
+  // Persistent Render Web Service URL (customizable via window.MINGLE_BACKEND_URL)
+  return window.MINGLE_BACKEND_URL || 'https://mingle-backend.onrender.com';
+}
+
+function apiFetch(endpoint, options = {}) {
+  const base = getServerUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${base}${cleanEndpoint}`;
+  return fetch(url, options);
+}
+
 // 1. SOUND EFFECTS SYNTHESIZER
 class MingleSoundFx {
   constructor() {
@@ -339,7 +364,7 @@ function initApp() {
 async function pollChatMessages() {
   if (!state.activeChatPartner || !state.currentUser) return;
   try {
-    const resp = await fetch(`/api/messages?userId=${state.currentUser.id}&partnerId=${state.activeChatPartner.id}`);
+    const resp = await apiFetch(`/api/messages?userId=${state.currentUser.id}&partnerId=${state.activeChatPartner.id}`);
     const res = await resp.json();
     if (res?.success && res?.messages) {
       res.messages.forEach(msg => {
@@ -414,12 +439,11 @@ function checkExistingSession() {
         hideAuthModal();
 
         // Silently sync session with server in background
-        if (typeof fetch !== 'undefined') {
-          fetch('/api/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, sessionToken: user.sessionToken })
-          })
+        apiFetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, sessionToken: user.sessionToken })
+        })
           .then(r => r.json())
           .then(res => {
             if (res?.success && res?.user) {
@@ -500,9 +524,7 @@ function initSocket() {
     console.warn('Socket.io not loaded, running in resilient mode');
     return;
   }
-  const SERVER_URL = (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) 
-    ? window.location.origin 
-    : 'http://localhost:3000';
+  const SERVER_URL = getServerUrl();
 
   state.socket = io(SERVER_URL, {
     transports: ['websocket', 'polling'],
@@ -713,7 +735,7 @@ async function loadHomeData() {
     });
   } else {
     try {
-      const resp = await fetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
+      const resp = await apiFetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
       const res = await resp.json();
       if (res?.success) {
         updateHomeUI(res);
@@ -867,7 +889,7 @@ async function loadOnlinePeople() {
     });
   } else {
     try {
-      const resp = await fetch(`/api/users/online?userId=${state.currentUser?.id || ''}`);
+      const resp = await apiFetch(`/api/users/online?userId=${state.currentUser?.id || ''}`);
       const res = await resp.json();
       if (res?.success) {
         renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another browser or phone to test live chat!');
@@ -886,7 +908,7 @@ async function loadMingledNetwork() {
     });
   } else {
     try {
-      const resp = await fetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
+      const resp = await apiFetch(`/api/home-data?userId=${state.currentUser?.id || ''}`);
       const res = await resp.json();
       if (res?.success && res?.onlineMingles) {
         DOM.mingledCountPill.textContent = res.minglesCount || res.onlineMingles.length;
@@ -1304,7 +1326,7 @@ function setupEventListeners() {
     }
     state.usernameCheckTimer = setTimeout(async () => {
       try {
-        const resp = await fetch('/api/check-username', {
+        const resp = await apiFetch('/api/check-username', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: val })
@@ -1426,7 +1448,7 @@ function setupEventListeners() {
     const timeoutId = setTimeout(() => controller.abort(), 2500);
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await apiFetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, displayName, password, avatar, bio }),
@@ -1449,7 +1471,7 @@ function setupEventListeners() {
       } else if (res?.error && res.error.toLowerCase().includes('already taken')) {
         // Try auto-authenticating with the entered password
         try {
-          const loginResp = await fetch('/api/login', {
+          const loginResp = await apiFetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -1503,7 +1525,7 @@ function setupEventListeners() {
     }
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await apiFetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -1620,7 +1642,7 @@ function setupEventListeners() {
 
     // Also send via REST API for serverless & cross-network delivery
     try {
-      fetch('/api/messages/send', {
+      apiFetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

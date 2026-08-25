@@ -32,17 +32,37 @@ const {
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  'https://mm-ten-bay.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173'
+];
+
+const corsOriginHandler = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    callback(null, true);
+  } else {
+    callback(null, true);
+  }
+};
+
 // Configure Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: corsOriginHandler,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true
   },
   maxHttpBufferSize: 1e7 // 10MB limit for image and file data
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: corsOriginHandler,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
@@ -316,7 +336,7 @@ function getLocalIpAddress() {
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-if (!process.env.VERCEL && (require.main === module || !process.env.NODE_ENV || process.env.NODE_ENV !== 'production')) {
+if (!process.env.VERCEL) {
   try {
     server.listen(PORT, HOST, () => {
       const localIp = getLocalIpAddress();

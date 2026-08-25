@@ -17,6 +17,7 @@ const {
   checkUsernameAvailable,
   registerUser,
   loginUser,
+  restoreSession,
   getPublicProfile,
   getAdminOverview
 } = require('./utils/users');
@@ -111,12 +112,36 @@ app.post('/api/login', (req, res) => {
 
     res.json({
       success: true,
-      user: getPublicProfile(result.user)
+      user: getPublicProfile(result.user, null, true)
     });
   } catch (err) {
     res.status(400).json({
       success: false,
       error: 'Login failed'
+    });
+  }
+});
+
+// Restore / verify persistent session
+app.post('/api/session', (req, res) => {
+  try {
+    const { userId, sessionToken } = req.body;
+    const result = restoreSession(userId, sessionToken);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    io.emit('user:presence_changed', {
+      userId: result.user.id,
+      isOnline: true,
+      user: getPublicProfile(result.user)
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: 'Session check failed'
     });
   }
 });

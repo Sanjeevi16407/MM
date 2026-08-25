@@ -6,6 +6,7 @@ const {
   checkUsernameAvailable,
   registerUser,
   loginUser,
+  restoreSession,
   bindSocketToUser,
   unbindSocket,
   getUserBySocketId,
@@ -54,7 +55,7 @@ function registerUserHandlers(io, socket, matchmaking) {
       if (typeof callback === 'function') {
         callback({
           success: true,
-          user: getPublicProfile(user)
+          user: getPublicProfile(user, null, true)
         });
       }
     } catch (err) {
@@ -64,11 +65,64 @@ function registerUserHandlers(io, socket, matchmaking) {
     }
   });
 
-  // 3. Login / Reconnect Identity
+  // 3. Restore Session
+  socket.on('user:restore_session', (data, callback) => {
+    try {
+      const userId = typeof data === 'object' ? (data?.userId || data?.id) : data;
+      const sessionToken = typeof data === 'object' ? data?.sessionToken : null;
+      const res = restoreSession(userId, sessionToken);
+
+      if (res.success) {
+        bindSocketToUser(socket.id, res.user.id);
+        socket.join(`user:${res.user.id}`);
+
+        io.emit('user:presence_changed', {
+          userId: res.user.id,
+          isOnline: true,
+          user: getPublicProfile(res.user)
+        });
+      }
+
+      if (typeof callback === 'function') {
+        callback(res);
+      }
+    } catch (err) {
+      if (typeof callback === 'function') {
+        callback({ success: false, error: 'Session restore failed' });
+      }
+    }
+  });
+
+  // 4. Login / Reconnect Identity
   socket.on('user:login', (data, callback) => {
     try {
-      const identifier = typeof data === 'object' ? (data?.username || data?.identifier) : data;
+      const identifier = typeof data === 'object' ? (data?.username || data?.identifier || data?.userId) : data;
       const password = typeof data === 'object' ? data?.password : null;
+      const sessionToken = typeof data === 'object' ? data?.sessionToken : null;
+
+      // If sessionToken is provided, try restoreSession
+      if (sessionToken && identifier) {
+        const restoreRes = restoreSession(identifier, sessionToken);
+        if (restoreRes.success) {
+          const user = restoreRes.user;
+          bindSocketToUser(socket.id, user.id);
+          socket.join(`user:${user.id}`);
+
+          io.emit('user:presence_changed', {
+            userId: user.id,
+            isOnline: true,
+            user: getPublicProfile(user)
+          });
+
+          if (typeof callback === 'function') {
+            callback({
+              success: true,
+              user: getPublicProfile(user, null, true)
+            });
+          }
+          return;
+        }
+      }
 
       const loginRes = loginUser(identifier, password);
       if (!loginRes.success) {
@@ -92,7 +146,7 @@ function registerUserHandlers(io, socket, matchmaking) {
       if (typeof callback === 'function') {
         callback({
           success: true,
-          user: getPublicProfile(user)
+          user: getPublicProfile(user, null, true)
         });
       }
     } catch (err) {

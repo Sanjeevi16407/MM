@@ -326,43 +326,79 @@ function showToast(message, type = 'info') {
 }
 
 // 5. SESSION & IDENTITY SETUP
-function checkExistingSession() {
+function showAuthModal(tab = 'register') {
+  DOM.authModal.classList.remove('hidden');
+  DOM.authModal.style.display = 'flex';
+  if (tab === 'login') {
+    DOM.authTabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-white btn-coral shadow-sm';
+    DOM.authTabRegister.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
+    DOM.loginForm.classList.remove('hidden');
+    DOM.registerForm.classList.add('hidden');
+  } else {
+    DOM.authTabRegister.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-white btn-coral shadow-sm';
+    DOM.authTabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
+    DOM.registerForm.classList.remove('hidden');
+    DOM.loginForm.classList.add('hidden');
+  }
+  if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
+  if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
+}
+
+function hideAuthModal() {
+  DOM.authModal.classList.add('hidden');
+  DOM.authModal.style.display = 'none';
+}
+
+async function checkExistingSession() {
   const savedUserJson = localStorage.getItem('mingle_user');
   if (savedUserJson) {
     try {
       const user = JSON.parse(savedUserJson);
-      if (user && user.username) {
-        state.socket.emit('user:login', user.username, (res) => {
-          if (res?.success) {
+      if (user && (user.id || user.username)) {
+        setCurrentUser(user);
+        hideAuthModal();
+
+        try {
+          const resp = await fetch('/api/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, sessionToken: user.sessionToken })
+          });
+          const res = await resp.json();
+          if (res?.success && res?.user) {
             setCurrentUser(res.user);
-            DOM.authModal.classList.add('hidden');
-            loadHomeData();
-          } else {
-            DOM.authModal.classList.remove('hidden');
+            hideAuthModal();
+            if (state.socket) {
+              state.socket.emit('user:restore_session', { userId: res.user.id, sessionToken: res.user.sessionToken });
+            }
+            return;
           }
-        });
-        return;
+        } catch (e) {
+          // Keep offline session
+          return;
+        }
       }
-    } catch(e) {}
+    } catch (e) {}
   }
-  DOM.authModal.classList.remove('hidden');
+  showAuthModal('register');
 }
 
 function setCurrentUser(user) {
+  if (!user) return;
   state.currentUser = user;
   localStorage.setItem('mingle_user', JSON.stringify(user));
 
   // Update Top Bar & Footers & Mobile Nav
-  DOM.headerAvatar.src = user.avatar;
-  DOM.headerDisplayName.textContent = user.displayName;
-  DOM.headerUsername.textContent = `@${user.username}`;
-  DOM.footerAvatar.src = user.avatar;
-  DOM.footerDisplayName.textContent = user.displayName;
-  DOM.footerUsername.textContent = `@${user.username}`;
-  DOM.homeHeroName.textContent = user.displayName;
+  if (DOM.headerAvatar) DOM.headerAvatar.src = user.avatar;
+  if (DOM.headerDisplayName) DOM.headerDisplayName.textContent = user.displayName;
+  if (DOM.headerUsername) DOM.headerUsername.textContent = `@${user.username}`;
+  if (DOM.footerAvatar) DOM.footerAvatar.src = user.avatar;
+  if (DOM.footerDisplayName) DOM.footerDisplayName.textContent = user.displayName;
+  if (DOM.footerUsername) DOM.footerUsername.textContent = `@${user.username}`;
+  if (DOM.homeHeroName) DOM.homeHeroName.textContent = user.displayName;
   if (DOM.mobileNavAvatar) DOM.mobileNavAvatar.src = user.avatar;
 
-  DOM.userMingleStatusSelect.value = user.mingleStatus || 'available';
+  if (DOM.userMingleStatusSelect) DOM.userMingleStatusSelect.value = user.mingleStatus || 'available';
 
   // Load Initial Hub
   loadHomeData();
@@ -1226,7 +1262,7 @@ function setupEventListeners() {
   DOM.registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = DOM.regUsernameInput.value.trim().replace(/^@+/, '').trim();
-    const displayName = DOM.regDisplayNameInput.value.trim();
+    const displayName = DOM.regDisplayNameInput.value.trim() || username;
     const password = DOM.regPasswordInput.value;
     const bio = DOM.regBioInput.value.trim();
     const avatar = state.customAvatarDataUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
@@ -1252,7 +1288,7 @@ function setupEventListeners() {
     }
 
     // Set Button Loading State
-    if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATING ID...';
+    if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Creating Profile...';
     if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = true;
 
     try {
@@ -1264,20 +1300,20 @@ function setupEventListeners() {
 
       const res = await response.json();
 
-      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
+      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Create Profile';
       if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
 
-      if (res?.success) {
+      if (res?.success && res?.user) {
         setCurrentUser(res.user);
         if (state.socket) {
-          state.socket.emit('user:login', { username: res.user.username, password });
+          state.socket.emit('user:restore_session', { userId: res.user.id, sessionToken: res.user.sessionToken });
         }
-        DOM.authModal.classList.add('hidden');
-        showToast(`🎉 Identity @${res.user.username} created!`, 'success');
+        hideAuthModal();
+        showToast(`🎉 Welcome to Mingle, ${res.user.displayName}!`, 'success');
       } else {
         const errMsg = res?.error || 'Registration failed';
         if (DOM.regErrorMsg) {
-          DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(errMsg)}</span>${errMsg.includes('already taken') ? `<div class="mt-1.5 text-[11px] text-amber-300 font-bold cursor-pointer underline" onclick="DOM.authTabLogin.click()">Already have this account? Sign In →</div>` : ''}`;
+          DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(errMsg)}</span>${errMsg.includes('already taken') ? `<div class="mt-1.5 text-xs text-[#FF5A5F] font-bold cursor-pointer underline" onclick="showAuthModal('login')">Already have this account? Sign In →</div>` : ''}`;
           DOM.regErrorMsg.classList.remove('hidden');
         }
         DOM.usernameFeedback.textContent = errMsg;
@@ -1285,7 +1321,7 @@ function setupEventListeners() {
         showToast(errMsg, 'error');
       }
     } catch (err) {
-      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
+      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'Create Profile';
       if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
       if (DOM.regErrorMsg) {
         DOM.regErrorMsg.textContent = 'Network error. Please try again.';
@@ -1301,11 +1337,13 @@ function setupEventListeners() {
     const username = DOM.loginUsernameInput.value.trim().replace(/^@+/, '').trim();
     const password = DOM.loginPasswordInput.value;
 
-    DOM.loginErrorMsg.classList.add('hidden');
+    if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
 
     if (!username) {
-      DOM.loginErrorMsg.textContent = 'Please enter your username';
-      DOM.loginErrorMsg.classList.remove('hidden');
+      if (DOM.loginErrorMsg) {
+        DOM.loginErrorMsg.textContent = 'Please enter your username';
+        DOM.loginErrorMsg.classList.remove('hidden');
+      }
       return;
     }
 
@@ -1318,43 +1356,32 @@ function setupEventListeners() {
 
       const res = await response.json();
 
-      if (res?.success) {
+      if (res?.success && res?.user) {
         setCurrentUser(res.user);
         if (state.socket) {
-          state.socket.emit('user:login', { username: res.user.username, password });
+          state.socket.emit('user:restore_session', { userId: res.user.id, sessionToken: res.user.sessionToken });
         }
-        DOM.authModal.classList.add('hidden');
+        hideAuthModal();
         showToast(`Welcome back, ${res.user.displayName}!`, 'success');
       } else {
         const errMsg = res?.error || 'Login failed';
-        DOM.loginErrorMsg.textContent = errMsg;
-        DOM.loginErrorMsg.classList.remove('hidden');
+        if (DOM.loginErrorMsg) {
+          DOM.loginErrorMsg.textContent = errMsg;
+          DOM.loginErrorMsg.classList.remove('hidden');
+        }
         showToast(errMsg, 'error');
       }
     } catch (err) {
-      DOM.loginErrorMsg.textContent = 'Network error. Please try again.';
-      DOM.loginErrorMsg.classList.remove('hidden');
+      if (DOM.loginErrorMsg) {
+        DOM.loginErrorMsg.textContent = 'Network error. Please try again.';
+        DOM.loginErrorMsg.classList.remove('hidden');
+      }
       showToast('Network error', 'error');
     }
   });
 
-  DOM.authTabRegister.addEventListener('click', () => {
-    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-white btn-coral shadow';
-    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
-    DOM.registerForm.classList.remove('hidden');
-    DOM.loginForm.classList.add('hidden');
-    if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
-    if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
-  });
-
-  DOM.authTabLogin.addEventListener('click', () => {
-    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-white btn-coral shadow';
-    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-xl transition text-gray-500 hover:text-gray-900';
-    DOM.loginForm.classList.remove('hidden');
-    DOM.registerForm.classList.add('hidden');
-    if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
-    if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
-  });
+  DOM.authTabRegister.addEventListener('click', () => showAuthModal('register'));
+  DOM.authTabLogin.addEventListener('click', () => showAuthModal('login'));
 
   DOM.randomizeAvatarsBtn.addEventListener('click', randomizeAvatars);
 
@@ -1587,8 +1614,15 @@ function setupEventListeners() {
 
   DOM.switchAccountBtn.addEventListener('click', () => {
     localStorage.removeItem('mingle_user');
+    state.currentUser = null;
     DOM.profileSettingsModal.classList.add('hidden');
-    DOM.authModal.classList.remove('hidden');
+    DOM.regUsernameInput.value = '';
+    DOM.regDisplayNameInput.value = '';
+    DOM.regPasswordInput.value = '';
+    DOM.regBioInput.value = '';
+    DOM.loginUsernameInput.value = '';
+    DOM.loginPasswordInput.value = '';
+    showAuthModal('login');
   });
 
   DOM.closeRightDrawerBtn.addEventListener('click', () => {

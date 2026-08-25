@@ -60,6 +60,7 @@ function registerUser({ username, displayName, password, avatar, bio }) {
   const cleanDisplayName = (displayName && displayName.trim()) || norm;
 
   const { hash, salt } = hashPassword(password);
+  const sessionToken = uuidv4();
 
   const newUser = {
     id,
@@ -67,6 +68,7 @@ function registerUser({ username, displayName, password, avatar, bio }) {
     displayName: cleanDisplayName,
     passwordHash: hash,
     passwordSalt: salt,
+    sessionToken,
     avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${norm}`,
     bio: (bio && bio.trim()) || 'Happy to mingle and connect!',
     status: 'online', // 'online' | 'away' | 'busy' | 'offline'
@@ -205,6 +207,9 @@ function loginUser(identifier, password, meta = {}) {
   user.lastSeen = Date.now();
   user.lastLoginAt = Date.now();
   user.totalLogins = (user.totalLogins || 0) + 1;
+  if (!user.sessionToken) {
+    user.sessionToken = uuidv4();
+  }
 
   // Record successful login in audit trail
   recordLoginLog({
@@ -219,6 +224,25 @@ function loginUser(identifier, password, meta = {}) {
   scheduleSave();
 
   return { success: true, user };
+}
+
+function restoreSession(userId, sessionToken) {
+  if (!userId) return { success: false, error: 'User ID is required' };
+  const user = db.users[userId] || (db.usernames[userId.toLowerCase()] ? db.users[db.usernames[userId.toLowerCase()]] : null);
+  if (!user) return { success: false, error: 'User session not found' };
+
+  if (sessionToken && user.sessionToken && user.sessionToken !== sessionToken) {
+    return { success: false, error: 'Session expired. Please log in again.' };
+  }
+
+  user.isOnline = true;
+  user.lastSeen = Date.now();
+  scheduleSave();
+
+  return {
+    success: true,
+    user: getPublicProfile(user, null, true)
+  };
 }
 
 function getAdminOverview() {
@@ -450,13 +474,14 @@ function updateUserStatus(userId, { status, mingleStatus }) {
   return user;
 }
 
-function getPublicProfile(user, callerUserId = null) {
+function getPublicProfile(user, callerUserId = null, isSelf = false) {
   if (!user) return null;
   const online = isUserOnline(user.id);
   const mingled = callerUserId ? areMingled(callerUserId, user.id) : false;
   const count = getMingleCount(user.id);
+  const selfMatch = isSelf || (callerUserId && callerUserId === user.id);
 
-  return {
+  const profile = {
     id: user.id,
     username: user.username,
     displayName: user.displayName,
@@ -475,12 +500,19 @@ function getPublicProfile(user, callerUserId = null) {
     },
     createdAt: user.createdAt
   };
+
+  if (selfMatch && user.sessionToken) {
+    profile.sessionToken = user.sessionToken;
+  }
+
+  return profile;
 }
 
 module.exports = {
   checkUsernameAvailable,
   registerUser,
   loginUser,
+  restoreSession,
   bindSocketToUser,
   unbindSocket,
   getUserById,

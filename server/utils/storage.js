@@ -21,9 +21,11 @@ let db = {
 let saveTimeout = null;
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (e) {}
 }
 
 function loadDatabase() {
@@ -47,7 +49,7 @@ function loadDatabase() {
       saveDatabaseSync();
     }
   } catch (err) {
-    console.error('Error loading database file:', err);
+    console.error('Error loading database file (using in-memory):', err.message);
   }
 }
 
@@ -63,10 +65,10 @@ function saveDatabaseAsync() {
   try {
     const data = JSON.stringify(db, null, 2);
     fs.writeFile(DB_FILE, data, (err) => {
-      if (err) console.error('Error saving database:', err);
+      if (err) console.warn('Note: Could not persist to disk (serverless runtime):', err.message);
     });
   } catch (err) {
-    console.error('Error in saveDatabaseAsync:', err);
+    console.warn('Note in saveDatabaseAsync:', err.message);
   }
 }
 
@@ -76,7 +78,7 @@ function saveDatabaseSync() {
     const data = JSON.stringify(db, null, 2);
     fs.writeFileSync(DB_FILE, data);
   } catch (err) {
-    console.error('Error in saveDatabaseSync:', err);
+    console.warn('Note in saveDatabaseSync:', err.message);
   }
 }
 

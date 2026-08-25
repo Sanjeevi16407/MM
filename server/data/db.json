@@ -62,12 +62,34 @@
         "allowMessagesFromNonMingles": true
       },
       "createdAt": 1787647806871
+    },
+    "06e14d32-4d67-43db-bd4e-6175859ea085": {
+      "id": "06e14d32-4d67-43db-bd4e-6175859ea085",
+      "username": "sai1",
+      "displayName": "saiiii",
+      "passwordHash": "ffbd69051033fb3577e80d8a8071c31d2d492bc4ab0f9d54bfebe39a8b355b999daeea801d3c69764a24f5dce1cda05f7746c824887945f389f52061fbefdf1d",
+      "passwordSalt": "07435a597e42f7016987cc06724440f4",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=Monkey_1",
+      "bio": "Happy to mingle and connect!",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": true,
+      "lastSeen": 1787648253040,
+      "lastLoginAt": 1787648253040,
+      "totalLogins": 2,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787648253030
     }
   },
   "usernames": {
     "sai": "3ba841f6-73c6-4897-8b58-f06bb8a2da45",
     "sanjeevi_2761": "440af6e5-79f0-43b3-93be-a929b868840c",
-    "alex_2761": "df6e3cd9-ad5e-452a-8420-b7feb510aa1a"
+    "alex_2761": "df6e3cd9-ad5e-452a-8420-b7feb510aa1a",
+    "sai1": "06e14d32-4d67-43db-bd4e-6175859ea085"
   },
   "mingles": [],
   "messages": [
@@ -88,6 +110,42 @@
   ],
   "blocks": [],
   "loginHistory": [
+    {
+      "id": "1a20489b-972d-49ba-848e-edb165182691",
+      "userId": "06e14d32-4d67-43db-bd4e-6175859ea085",
+      "username": "sai1",
+      "displayName": "saiiii",
+      "status": "SUCCESS",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787648253040,
+      "formattedDate": "8/25/2026, 2:27:33 PM"
+    },
+    {
+      "id": "c62a53dd-5c11-4f2c-9cf7-b599cc8f3ec6",
+      "userId": "06e14d32-4d67-43db-bd4e-6175859ea085",
+      "username": "sai1",
+      "displayName": "saiiii",
+      "status": "REGISTERED",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787648253030,
+      "formattedDate": "8/25/2026, 2:27:33 PM"
+    },
+    {
+      "id": "e45d7bf2-b081-400e-b5d3-7f60b068b1a5",
+      "userId": "3ba841f6-73c6-4897-8b58-f06bb8a2da45",
+      "username": "sai",
+      "displayName": "sai",
+      "status": "FAILED",
+      "error": "Missing password",
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787648241843,
+      "formattedDate": "8/25/2026, 2:27:21 PM"
+    },
     {
       "id": "db0523c5-876e-409e-a1df-fc46056e38c4",
       "userId": "440af6e5-79f0-43b3-93be-a929b868840c",

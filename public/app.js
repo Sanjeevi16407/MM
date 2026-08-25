@@ -1036,14 +1036,20 @@ function setupEventListeners() {
   // Check Username Debounce
   DOM.regUsernameInput.addEventListener('input', (e) => {
     clearTimeout(state.usernameCheckTimer);
-    const val = e.target.value.trim().replace(/^@/, '');
+    const val = e.target.value.trim().replace(/^@+/, '').trim();
     if (!val) {
       DOM.usernameFeedback.textContent = '';
       DOM.usernameCheckIcon.classList.add('hidden');
       return;
     }
-    state.usernameCheckTimer = setTimeout(() => {
-      state.socket.emit('user:check_username', val, (res) => {
+    state.usernameCheckTimer = setTimeout(async () => {
+      try {
+        const resp = await fetch('/api/check-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: val })
+        });
+        const res = await resp.json();
         if (res.available) {
           DOM.usernameFeedback.textContent = 'Username available ✓';
           DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-emerald-400';
@@ -1053,8 +1059,8 @@ function setupEventListeners() {
           DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
           DOM.usernameCheckIcon.classList.add('hidden');
         }
-      });
-    }, 250);
+      } catch (e) {}
+    }, 200);
   });
 
   // Profile Photo Upload Handlers
@@ -1108,10 +1114,10 @@ function setupEventListeners() {
     });
   }
 
-  // Register Identity Form Submit
-  DOM.registerForm.addEventListener('submit', (e) => {
+  // Register Identity Form Submit (Direct HTTP REST with instant response)
+  DOM.registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = DOM.regUsernameInput.value.trim().replace(/^@/, '');
+    const username = DOM.regUsernameInput.value.trim().replace(/^@+/, '').trim();
     const displayName = DOM.regDisplayNameInput.value.trim();
     const password = DOM.regPasswordInput.value;
     const bio = DOM.regBioInput.value.trim();
@@ -1141,48 +1147,50 @@ function setupEventListeners() {
     if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATING ID...';
     if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = true;
 
-    let responded = false;
-    const timeoutTimer = setTimeout(() => {
-      if (!responded) {
-        responded = true;
-        if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
-        if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
-        if (DOM.regErrorMsg) {
-          DOM.regErrorMsg.textContent = 'Connection took too long. Please check connection and try again.';
-          DOM.regErrorMsg.classList.remove('hidden');
-        }
-      }
-    }, 8000);
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, displayName, password, avatar, bio })
+      });
 
-    state.socket.emit('user:register', { username, displayName, password, avatar, bio }, (res) => {
-      if (responded) return;
-      responded = true;
-      clearTimeout(timeoutTimer);
+      const res = await response.json();
 
       if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
       if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
 
       if (res?.success) {
         setCurrentUser(res.user);
+        if (state.socket) {
+          state.socket.emit('user:login', { username: res.user.username, password });
+        }
         DOM.authModal.classList.add('hidden');
         showToast(`🎉 Identity @${res.user.username} created!`, 'success');
       } else {
         const errMsg = res?.error || 'Registration failed';
         if (DOM.regErrorMsg) {
-          DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(errMsg)}</span>${errMsg.includes('already taken') ? `<div class="mt-1 text-[11px] text-amber-300 font-bold cursor-pointer underline" onclick="DOM.authTabLogin.click()">Already have this account? Sign In →</div>` : ''}`;
+          DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(errMsg)}</span>${errMsg.includes('already taken') ? `<div class="mt-1.5 text-[11px] text-amber-300 font-bold cursor-pointer underline" onclick="DOM.authTabLogin.click()">Already have this account? Sign In →</div>` : ''}`;
           DOM.regErrorMsg.classList.remove('hidden');
         }
         DOM.usernameFeedback.textContent = errMsg;
         DOM.usernameFeedback.className = 'text-[10px] mt-0.5 font-semibold text-rose-400';
         showToast(errMsg, 'error');
       }
-    });
+    } catch (err) {
+      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
+      if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
+      if (DOM.regErrorMsg) {
+        DOM.regErrorMsg.textContent = 'Network error. Please try again.';
+        DOM.regErrorMsg.classList.remove('hidden');
+      }
+      showToast('Network error', 'error');
+    }
   });
 
-  // Login Form Submit
-  DOM.loginForm.addEventListener('submit', (e) => {
+  // Login Form Submit (Direct HTTP REST with instant response)
+  DOM.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = DOM.loginUsernameInput.value.trim().replace(/^@/, '');
+    const username = DOM.loginUsernameInput.value.trim().replace(/^@+/, '').trim();
     const password = DOM.loginPasswordInput.value;
 
     DOM.loginErrorMsg.classList.add('hidden');
@@ -1193,24 +1201,20 @@ function setupEventListeners() {
       return;
     }
 
-    let responded = false;
-    const timeoutTimer = setTimeout(() => {
-      if (!responded) {
-        responded = true;
-        if (DOM.loginErrorMsg) {
-          DOM.loginErrorMsg.textContent = 'Connection took too long. Please try again.';
-          DOM.loginErrorMsg.classList.remove('hidden');
-        }
-      }
-    }, 8000);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
 
-    state.socket.emit('user:login', { username, password }, (res) => {
-      if (responded) return;
-      responded = true;
-      clearTimeout(timeoutTimer);
+      const res = await response.json();
 
       if (res?.success) {
         setCurrentUser(res.user);
+        if (state.socket) {
+          state.socket.emit('user:login', { username: res.user.username, password });
+        }
         DOM.authModal.classList.add('hidden');
         showToast(`Welcome back, ${res.user.displayName}!`, 'success');
       } else {
@@ -1219,7 +1223,11 @@ function setupEventListeners() {
         DOM.loginErrorMsg.classList.remove('hidden');
         showToast(errMsg, 'error');
       }
-    });
+    } catch (err) {
+      DOM.loginErrorMsg.textContent = 'Network error. Please try again.';
+      DOM.loginErrorMsg.classList.remove('hidden');
+      showToast('Network error', 'error');
+    }
   });
 
   DOM.authTabRegister.addEventListener('click', () => {

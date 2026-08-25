@@ -1,5 +1,6 @@
 /**
- * MingleMonkey🐒 - Real-Time Online Messaging Platform Server
+ * MINGLE 🐒 - Real-Time Online Messaging Platform Server
+ * (Includes REST Auth Endpoints + Socket.IO WebSockets)
  */
 
 const express = require('express');
@@ -12,6 +13,12 @@ const registerUserHandlers = require('./socket/users');
 const { registerChannelHandlers } = require('./socket/channels');
 const registerMessageHandlers = require('./socket/messages');
 const matchmakingModule = require('./socket/matchmaking');
+const {
+  checkUsernameAvailable,
+  registerUser,
+  loginUser,
+  getPublicProfile
+} = require('./utils/users');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,7 +34,8 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check endpoint
@@ -37,6 +45,75 @@ app.get('/health', (req, res) => {
     service: 'MingleMonkey',
     timestamp: new Date().toISOString()
   });
+});
+
+// ==========================================
+// REST AUTH & IDENTITY ENDPOINTS
+// ==========================================
+
+// Check username availability
+app.post('/api/check-username', (req, res) => {
+  const { username } = req.body;
+  const result = checkUsernameAvailable(username);
+  res.json(result);
+});
+
+// Register permanent identity
+app.post('/api/register', (req, res) => {
+  try {
+    const user = registerUser({
+      username: req.body?.username,
+      displayName: req.body?.displayName,
+      password: req.body?.password,
+      avatar: req.body?.avatar,
+      bio: req.body?.bio
+    });
+
+    io.emit('user:presence_changed', {
+      userId: user.id,
+      isOnline: true,
+      user: getPublicProfile(user)
+    });
+
+    res.json({
+      success: true,
+      user: getPublicProfile(user)
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: err.message || 'Registration failed'
+    });
+  }
+});
+
+// Sign in with username & password
+app.post('/api/login', (req, res) => {
+  try {
+    const identifier = req.body?.username || req.body?.identifier;
+    const password = req.body?.password;
+
+    const result = loginUser(identifier, password);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    io.emit('user:presence_changed', {
+      userId: result.user.id,
+      isOnline: true,
+      user: getPublicProfile(result.user)
+    });
+
+    res.json({
+      success: true,
+      user: getPublicProfile(result.user)
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: 'Login failed'
+    });
+  }
 });
 
 // Socket.io connection handler

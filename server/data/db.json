@@ -42,8 +42,8 @@
       "bio": "Happy to mingle and connect!",
       "status": "online",
       "mingleStatus": "available",
-      "isOnline": false,
-      "lastSeen": 1787641630781,
+      "isOnline": true,
+      "lastSeen": 1787644494001,
       "privacySettings": {
         "showOnlineStatus": true,
         "allowSurpriseMingle": true,
@@ -202,6 +202,44 @@
         "allowMessagesFromNonMingles": true
       },
       "createdAt": 1787642226311
+    },
+    "30d1d89b-c12f-4121-bf4b-23ca531eb7f4": {
+      "id": "30d1d89b-c12f-4121-bf4b-23ca531eb7f4",
+      "username": "sanjeevi_9687",
+      "displayName": "Sanjeevi",
+      "passwordHash": "9b78890adab51e9810b4935ae2b2c0dffacabc8e2b9cfc8f9a68cabfefd6d635a98948d795751f87610910a86c4e41e1ca2b7160e200f515a63c9ca7486f7dad",
+      "passwordSalt": "e4afd8497489d209a9d34a12d117e2f5",
+      "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "bio": "Creator of MINGLE",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787644622489,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787644622306
+    },
+    "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1": {
+      "id": "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1",
+      "username": "alex_9687",
+      "displayName": "Alex",
+      "passwordHash": "86ce4f4ab42550392762b3766db1b495c69f5d271a459e31f535c59792fadce73081fae03e5495ecee08c682f4590ccf17313af0c0397ad6c8dbb485fb9d0af7",
+      "passwordSalt": "480b246fcc795862159e03ce239e9ac2",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=alex_9687",
+      "bio": "Building cool software",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787644622490,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787644622311
     }
   },
   "usernames": {
@@ -215,7 +253,9 @@
     "sanjeevi_6331": "32c961e4-5596-4099-a324-0eb1121f7725",
     "alex_6331": "c913aa14-5004-4e03-80aa-4703d9d46bf2",
     "sanjeevi_9527": "fd25f13a-a88a-46d6-a92b-def2103d374f",
-    "alex_9527": "49ed5734-d43f-4988-a72c-81421085f8fb"
+    "alex_9527": "49ed5734-d43f-4988-a72c-81421085f8fb",
+    "sanjeevi_9687": "30d1d89b-c12f-4121-bf4b-23ca531eb7f4",
+    "alex_9687": "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1"
   },
   "mingles": [],
   "messages": [
@@ -288,6 +328,20 @@
       "reactions": {},
       "read": false,
       "timestamp": 1787642226350
+    },
+    {
+      "id": "06d61ff9-4a79-43d7-a822-eadba1606da4",
+      "type": "text",
+      "senderId": "30d1d89b-c12f-4121-bf4b-23ca531eb7f4",
+      "senderUsername": "sanjeevi_9687",
+      "senderDisplayName": "Sanjeevi",
+      "senderAvatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "receiverId": "73d83cc0-f4cd-4463-a8e7-dd2ec42767b1",
+      "content": "Hey Alex! Glad we mingled.",
+      "attachment": null,
+      "reactions": {},
+      "read": false,
+      "timestamp": 1787644622337
     }
   ],
   "blocks": []

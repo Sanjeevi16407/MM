@@ -155,11 +155,30 @@ io.on('connection', (socket) => {
   matchmakingModule.registerMatchmakingHandlers(io, socket);
 });
 
+const os = require('os');
+
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name in interfaces) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`========================================`);
-  console.log(` 🐒 MingleMonkey Server is live on http://localhost:${PORT}`);
-  console.log(` 👑 Admin Dashboard: http://localhost:${PORT}/admin`);
-  console.log(` 📡 Health check: http://localhost:${PORT}/health`);
-  console.log(`========================================`);
+const HOST = '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
+  const localIp = getLocalIpAddress();
+  console.log(`====================================================`);
+  console.log(` 🐒 MINGLE LIVE ON YOUR NETWORK`);
+  console.log(` 💻 On Laptop / PC:  http://localhost:${PORT}`);
+  console.log(` 📱 On Mobile Phone: http://${localIp}:${PORT}`);
+  console.log(` 👑 Admin Portal:    http://${localIp}:${PORT}/admin`);
+  console.log(`====================================================`);
 });
+

@@ -197,15 +197,21 @@ function getLocalIpAddress() {
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-server.listen(PORT, HOST, () => {
-  const localIp = getLocalIpAddress();
-  console.log(`====================================================`);
-  console.log(` 🐒 MINGLE LIVE ON YOUR NETWORK`);
-  console.log(` 💻 On Laptop / PC:  http://localhost:${PORT}`);
-  console.log(` 📱 On Mobile Phone: http://${localIp}:${PORT}`);
-  console.log(` 👑 Admin Portal:    http://${localIp}:${PORT}/admin`);
-  console.log(`====================================================`);
-});
+if (!process.env.VERCEL && (require.main === module || !process.env.NODE_ENV || process.env.NODE_ENV !== 'production')) {
+  try {
+    server.listen(PORT, HOST, () => {
+      const localIp = getLocalIpAddress();
+      console.log(`====================================================`);
+      console.log(` 🐒 MINGLE LIVE ON YOUR NETWORK`);
+      console.log(` 💻 On Laptop / PC:  http://localhost:${PORT}`);
+      console.log(` 📱 On Mobile Phone: http://${localIp}:${PORT}`);
+      console.log(` 👑 Admin Portal:    http://${localIp}:${PORT}/admin`);
+      console.log(`====================================================`);
+    });
+  } catch (err) {
+    console.warn('Server listen skipped or port busy:', err.message);
+  }
+}
 
 module.exports = app;
 

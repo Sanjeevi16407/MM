@@ -11,8 +11,8 @@
       "bio": "Happy to mingle and connect!",
       "status": "online",
       "mingleStatus": "available",
-      "isOnline": true,
-      "lastSeen": 1787651034736,
+      "isOnline": false,
+      "lastSeen": 1787652430321,
       "lastLoginAt": 1787650973096,
       "totalLogins": 1,
       "privacySettings": {
@@ -65,12 +65,58 @@
         "allowMessagesFromNonMingles": true
       },
       "createdAt": 1787651098492
+    },
+    "e49ead1c-6531-42e0-9c56-302332a2ffeb": {
+      "id": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+      "username": "sanjeevi_7067",
+      "displayName": "Sanjeevi",
+      "passwordHash": "5adf1779fb5fceb5dc24ba9d72d32fea6d0af6a28a6e1f3d32043f2bc537410a57bb7ba6c7d47072221f29ec4880ae5d0f347e8811e2a9be3e678c9bfc946b07",
+      "passwordSalt": "69f5df64313c1b18103f80eb0b342c79",
+      "sessionToken": "2d73d1dc-bd2a-40a4-8e78-b7f3142f5ae5",
+      "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "bio": "Creator of MINGLE",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787655933453,
+      "lastLoginAt": 1787655933281,
+      "totalLogins": 2,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787655933247
+    },
+    "ab1d50ee-fe82-462a-973a-53cdc585fbad": {
+      "id": "ab1d50ee-fe82-462a-973a-53cdc585fbad",
+      "username": "alex_7067",
+      "displayName": "Alex",
+      "passwordHash": "d3bad15cd73d9517c779ba636ac5ceb901b26e35abfec3089102306b84480819bb966838583a63cf093d65b8a7991a29083e8c07ac7f8fce151b064eafaff7d2",
+      "passwordSalt": "9fcf88bd2ea4066c2463dd4a9b54d074",
+      "sessionToken": "7d4c95d7-5e86-47ab-bf9f-cae86980d874",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=alex_7067",
+      "bio": "Building cool software",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787655933453,
+      "lastLoginAt": 1787655933268,
+      "totalLogins": 1,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787655933268
     }
   },
   "usernames": {
     "thanos": "bbc3837b-08c7-47c1-a06d-6e06afcec196",
     "sanjeevi_7360": "b2bf3337-9994-4ba4-b904-8c155858985f",
-    "alex_7360": "790155aa-1169-43c9-9fdd-0d0eeb9554b5"
+    "alex_7360": "790155aa-1169-43c9-9fdd-0d0eeb9554b5",
+    "sanjeevi_7067": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+    "alex_7067": "ab1d50ee-fe82-462a-973a-53cdc585fbad"
   },
   "mingles": [],
   "messages": [
@@ -87,10 +133,72 @@
       "reactions": {},
       "read": false,
       "timestamp": 1787651098522
+    },
+    {
+      "id": "f744c50e-a6e4-4a58-bbf5-7d9471c5098a",
+      "type": "text",
+      "senderId": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+      "senderUsername": "sanjeevi_7067",
+      "senderDisplayName": "Sanjeevi",
+      "senderAvatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "receiverId": "ab1d50ee-fe82-462a-973a-53cdc585fbad",
+      "content": "Hey Alex! Glad we mingled.",
+      "attachment": null,
+      "reactions": {},
+      "read": false,
+      "timestamp": 1787655933298
     }
   ],
   "blocks": [],
   "loginHistory": [
+    {
+      "id": "a114f4a2-843d-4e1d-931e-d2ccbb4d8ab2",
+      "userId": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+      "username": "sanjeevi_7067",
+      "displayName": "Sanjeevi",
+      "status": "SUCCESS",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787655933281,
+      "formattedDate": "8/25/2026, 4:35:33 PM"
+    },
+    {
+      "id": "b76b90c9-ad39-423e-a655-cb45f0eca073",
+      "userId": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+      "username": "sanjeevi_7067",
+      "displayName": "Sanjeevi",
+      "status": "FAILED",
+      "error": "Incorrect password entered",
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787655933280,
+      "formattedDate": "8/25/2026, 4:35:33 PM"
+    },
+    {
+      "id": "a262ebad-b785-4e89-9b80-9cdfdc169806",
+      "userId": "ab1d50ee-fe82-462a-973a-53cdc585fbad",
+      "username": "alex_7067",
+      "displayName": "Alex",
+      "status": "REGISTERED",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787655933268,
+      "formattedDate": "8/25/2026, 4:35:33 PM"
+    },
+    {
+      "id": "a21ccd75-5305-4932-90f3-3bb3a28ae131",
+      "userId": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
+      "username": "sanjeevi_7067",
+      "displayName": "Sanjeevi",
+      "status": "REGISTERED",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787655933247,
+      "formattedDate": "8/25/2026, 4:35:33 PM"
+    },
     {
       "id": "b894be3e-8fe8-4c10-859d-1ac3da7b8644",
       "userId": "b2bf3337-9994-4ba4-b904-8c155858985f",

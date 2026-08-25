@@ -79,7 +79,7 @@ app.post('/api/register', (req, res) => {
 
     res.json({
       success: true,
-      user: getPublicProfile(user)
+      user: getPublicProfile(user, null, true)
     });
   } catch (err) {
     res.status(400).json({

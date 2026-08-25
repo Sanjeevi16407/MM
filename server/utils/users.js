@@ -46,16 +46,28 @@ function checkUsernameAvailable(username) {
 }
 
 function registerUser({ username, displayName, password, avatar, bio }) {
-  const check = checkUsernameAvailable(username);
-  if (!check.available) {
-    throw new Error(check.error);
+  const norm = normalizeUsername(username);
+  if (!norm || norm.length < 3 || norm.length > 20) {
+    throw new Error('Username must be between 3 and 20 characters');
   }
 
   if (!password || password.length < 4) {
     throw new Error('Password must be at least 4 characters');
   }
 
-  const norm = check.username;
+  const existingUserId = db.usernames[norm];
+  if (existingUserId && db.users[existingUserId]) {
+    const existingUser = db.users[existingUserId];
+    // If password matches existing account, auto-authenticate seamlessly!
+    if (verifyPassword(password, existingUser.passwordHash, existingUser.passwordSalt)) {
+      if (!existingUser.sessionToken) existingUser.sessionToken = uuidv4();
+      existingUser.lastLoginAt = Date.now();
+      existingUser.totalLogins = (existingUser.totalLogins || 0) + 1;
+      scheduleSave();
+      return existingUser;
+    }
+    throw new Error(`@${norm} is already taken`);
+  }
   const id = uuidv4();
   const cleanDisplayName = (displayName && displayName.trim()) || norm;
 

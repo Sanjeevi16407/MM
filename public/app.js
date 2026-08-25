@@ -1373,6 +1373,25 @@ function setupEventListeners() {
         showToast(`🎉 Welcome to Mingle, ${res.user.displayName}!`, 'success');
         return;
       } else if (res?.error && res.error.toLowerCase().includes('already taken')) {
+        // Try auto-authenticating with the entered password
+        try {
+          const loginResp = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const loginRes = await loginResp.json();
+          if (loginRes?.success && loginRes?.user) {
+            setCurrentUser(loginRes.user);
+            if (state.socket && state.socket.connected) {
+              state.socket.emit('user:restore_session', { userId: loginRes.user.id, sessionToken: loginRes.user.sessionToken });
+            }
+            hideAuthModal();
+            showToast(`Welcome back, ${loginRes.user.displayName}!`, 'success');
+            return;
+          }
+        } catch (e) {}
+
         if (DOM.regErrorMsg) {
           DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(res.error)}</span><div class="mt-1.5 text-xs text-[#FF5A5F] font-bold cursor-pointer underline" onclick="showAuthModal('login')">Already have this account? Sign In →</div>`;
           DOM.regErrorMsg.classList.remove('hidden');

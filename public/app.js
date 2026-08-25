@@ -278,12 +278,12 @@ const DOM = {
 
 // 4. INITIALIZATION
 function initApp() {
+  initSocket();
   lucide.createIcons();
   setupTheme();
   setupSoundUI();
   setupAvatarPicker();
   setupEventListeners();
-  initSocket();
   checkExistingSession();
 }
 
@@ -1121,20 +1121,28 @@ function setupEventListeners() {
       return;
     }
 
-    if (!state.socket || !state.socket.connected) {
-      if (DOM.regErrorMsg) {
-        DOM.regErrorMsg.textContent = 'Connecting to server... Please wait a moment.';
-        DOM.regErrorMsg.classList.remove('hidden');
-      }
-      showToast('Server connecting, please try in a moment', 'error');
-      return;
-    }
-
     // Set Button Loading State
     if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATING ID...';
     if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = true;
 
+    let responded = false;
+    const timeoutTimer = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
+        if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
+        if (DOM.regErrorMsg) {
+          DOM.regErrorMsg.textContent = 'Connection took too long. Please check connection and try again.';
+          DOM.regErrorMsg.classList.remove('hidden');
+        }
+      }
+    }, 8000);
+
     state.socket.emit('user:register', { username, displayName, password, avatar, bio }, (res) => {
+      if (responded) return;
+      responded = true;
+      clearTimeout(timeoutTimer);
+
       if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
       if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
 
@@ -1169,13 +1177,22 @@ function setupEventListeners() {
       return;
     }
 
-    if (!state.socket || !state.socket.connected) {
-      DOM.loginErrorMsg.textContent = 'Connecting to server... Please wait a moment.';
-      DOM.loginErrorMsg.classList.remove('hidden');
-      return;
-    }
+    let responded = false;
+    const timeoutTimer = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        if (DOM.loginErrorMsg) {
+          DOM.loginErrorMsg.textContent = 'Connection took too long. Please try again.';
+          DOM.loginErrorMsg.classList.remove('hidden');
+        }
+      }
+    }, 8000);
 
     state.socket.emit('user:login', { username, password }, (res) => {
+      if (responded) return;
+      responded = true;
+      clearTimeout(timeoutTimer);
+
       if (res?.success) {
         setCurrentUser(res.user);
         DOM.authModal.classList.add('hidden');

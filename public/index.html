@@ -42,7 +42,7 @@
     }
   </script>
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -847,15 +847,8 @@
       <img id="lightboxImageElement" src="" class="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-gray-700">
       <p class="text-xs text-gray-300 mt-2">Click anywhere to close</p>
     </div>
-  </div>
-
-  <!-- Socket.io Client (with CDN fallback) -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    if (typeof io === 'undefined') {
-      document.write('<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"><\/script>');
-    }
-  </script>
+  <!-- Socket.io Client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <!-- Application Client Engine -->
   <script src="app.js"></script>
 </body>

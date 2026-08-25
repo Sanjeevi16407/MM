@@ -312,7 +312,7 @@ function initApp() {
   } catch (e) {}
 
   try {
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
   } catch (e) {}
 
   try {
@@ -337,7 +337,7 @@ function showToast(message, type = 'info') {
   `;
 
   DOM.toastContainer.appendChild(toast);
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 
   setTimeout(() => {
     toast.style.opacity = '0';
@@ -461,6 +461,10 @@ function randomizeAvatars() {
 // 6. SOCKET.IO EVENTS & SYNCHRONIZATION
 function initSocket() {
   if (state.socket) return;
+  if (typeof io !== 'function') {
+    console.warn('Socket.io not loaded, running in resilient mode');
+    return;
+  }
   const SERVER_URL = (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) 
     ? window.location.origin 
     : 'http://localhost:3000';
@@ -661,7 +665,7 @@ function switchSection(sectionName) {
   // Close mobile sidebar on selection
   if (DOM.mainNavSidebar) DOM.mainNavSidebar.classList.add('-translate-x-full');
   if (DOM.mobileSidebarBackdrop) DOM.mobileSidebarBackdrop.classList.add('hidden');
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 // 8. SECTION LOADERS
@@ -736,7 +740,7 @@ function renderMobileStories(mingles) {
       DOM.mobileStoriesReel.appendChild(bubble);
     });
   }
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 function renderHomeOnlineMingles(mingles) {
@@ -761,7 +765,7 @@ function renderHomeOnlineMingles(mingles) {
         </div>
       </div>
     `;
-    lucide.createIcons();
+    if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     return;
   }
 
@@ -802,7 +806,7 @@ function renderHomeOnlineMingles(mingles) {
     `;
     DOM.homeOnlineMinglesGrid.appendChild(card);
   });
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 function loadOnlinePeople() {
@@ -874,7 +878,7 @@ function renderUserCardsGrid(users, container, emptyText) {
     `;
     container.appendChild(card);
   });
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 // 9. THREADS & ACTIVE CHAT LOGIC
@@ -1165,7 +1169,7 @@ function appendChatMessage(msg, container, autoScroll = true) {
   }
 
   container.appendChild(wrapper);
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
   if (autoScroll) scrollToBottom(container);
 }
 
@@ -1287,7 +1291,7 @@ function setupEventListeners() {
       const isPwd = DOM.regPasswordInput.type === 'password';
       DOM.regPasswordInput.type = isPwd ? 'text' : 'password';
       DOM.regPasswordEyeIcon.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
-      lucide.createIcons();
+      if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     });
   }
 
@@ -1296,7 +1300,7 @@ function setupEventListeners() {
       const isPwd = DOM.loginPasswordInput.type === 'password';
       DOM.loginPasswordInput.type = isPwd ? 'text' : 'password';
       DOM.loginPasswordEyeIcon.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
-      lucide.createIcons();
+      if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     });
   }
 
@@ -1844,7 +1848,7 @@ function setupSoundUI() {
   if (DOM.soundToggleBtn) {
     DOM.soundToggleBtn.classList.toggle('text-rose-400', !sounds.enabled);
   }
-  if (window.lucide) lucide.createIcons();
+  if (window.lucide) if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 function setupTheme() {
@@ -1856,7 +1860,7 @@ function setupTheme() {
     document.documentElement.classList.remove('dark');
     if (DOM.themeIcon) DOM.themeIcon.setAttribute('data-lucide', 'moon');
   }
-  if (window.lucide) lucide.createIcons();
+  if (window.lucide) if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 }
 
 // Robust bootstrap

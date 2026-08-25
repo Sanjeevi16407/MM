@@ -109,6 +109,50 @@
         "allowMessagesFromNonMingles": true
       },
       "createdAt": 1787655933268
+    },
+    "9197dc5e-f363-450b-885d-f045991d717c": {
+      "id": "9197dc5e-f363-450b-885d-f045991d717c",
+      "username": "sanjeevi_3132",
+      "displayName": "Sanjeevi",
+      "passwordHash": "5e184c8604c4a3d4375a34c5c816cb40a2899d240889341a09a7152810b1b8a3da63b124dea273f7e2c11a4f6de229534e417b5dd34069191bd303e3c49f9109",
+      "passwordSalt": "da7b5bfe63b8dc22fc51076642e8761b",
+      "sessionToken": "c51e65c5-cc44-4aae-8638-289358d1d210",
+      "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "bio": "Creator of MINGLE",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787656572775,
+      "lastLoginAt": 1787656572607,
+      "totalLogins": 2,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787656572590
+    },
+    "a691daf8-243b-493d-9b63-ab81ed2e8f85": {
+      "id": "a691daf8-243b-493d-9b63-ab81ed2e8f85",
+      "username": "alex_3132",
+      "displayName": "Alex",
+      "passwordHash": "f41da9c9d82e9539ab3d121aef4eccd2daeb878afc5364bea0bbf5d0187c28bcb38c07cc17a90d2f8c854aee5d7fb6afa95537fdd63fdc0c8711c1e101f1875f",
+      "passwordSalt": "69f2e3a6ed03bb607833057c1284ad62",
+      "sessionToken": "cb626229-11a1-41e6-ad02-eb46722c6d94",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=alex_3132",
+      "bio": "Building cool software",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787656572776,
+      "lastLoginAt": 1787656572593,
+      "totalLogins": 1,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787656572593
     }
   },
   "usernames": {
@@ -116,7 +160,9 @@
     "sanjeevi_7360": "b2bf3337-9994-4ba4-b904-8c155858985f",
     "alex_7360": "790155aa-1169-43c9-9fdd-0d0eeb9554b5",
     "sanjeevi_7067": "e49ead1c-6531-42e0-9c56-302332a2ffeb",
-    "alex_7067": "ab1d50ee-fe82-462a-973a-53cdc585fbad"
+    "alex_7067": "ab1d50ee-fe82-462a-973a-53cdc585fbad",
+    "sanjeevi_3132": "9197dc5e-f363-450b-885d-f045991d717c",
+    "alex_3132": "a691daf8-243b-493d-9b63-ab81ed2e8f85"
   },
   "mingles": [],
   "messages": [
@@ -147,10 +193,72 @@
       "reactions": {},
       "read": false,
       "timestamp": 1787655933298
+    },
+    {
+      "id": "f8c8b164-a66a-4f44-83c2-5678976fa07f",
+      "type": "text",
+      "senderId": "9197dc5e-f363-450b-885d-f045991d717c",
+      "senderUsername": "sanjeevi_3132",
+      "senderDisplayName": "Sanjeevi",
+      "senderAvatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "receiverId": "a691daf8-243b-493d-9b63-ab81ed2e8f85",
+      "content": "Hey Alex! Glad we mingled.",
+      "attachment": null,
+      "reactions": {},
+      "read": false,
+      "timestamp": 1787656572622
     }
   ],
   "blocks": [],
   "loginHistory": [
+    {
+      "id": "8ccebe4a-98ae-40cc-b4b6-0b511293661f",
+      "userId": "9197dc5e-f363-450b-885d-f045991d717c",
+      "username": "sanjeevi_3132",
+      "displayName": "Sanjeevi",
+      "status": "SUCCESS",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787656572607,
+      "formattedDate": "8/25/2026, 4:46:12 PM"
+    },
+    {
+      "id": "8fefd6e2-6df2-4a1b-beb2-5a9edc5dba62",
+      "userId": "9197dc5e-f363-450b-885d-f045991d717c",
+      "username": "sanjeevi_3132",
+      "displayName": "Sanjeevi",
+      "status": "FAILED",
+      "error": "Incorrect password entered",
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787656572606,
+      "formattedDate": "8/25/2026, 4:46:12 PM"
+    },
+    {
+      "id": "056d380e-9e7f-4445-9248-a4c04197b0d6",
+      "userId": "a691daf8-243b-493d-9b63-ab81ed2e8f85",
+      "username": "alex_3132",
+      "displayName": "Alex",
+      "status": "REGISTERED",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787656572593,
+      "formattedDate": "8/25/2026, 4:46:12 PM"
+    },
+    {
+      "id": "c5d3f926-3b21-46b3-9d41-f10cfc8a0465",
+      "userId": "9197dc5e-f363-450b-885d-f045991d717c",
+      "username": "sanjeevi_3132",
+      "displayName": "Sanjeevi",
+      "status": "REGISTERED",
+      "error": null,
+      "ip": "127.0.0.1",
+      "userAgent": "Web Browser",
+      "timestamp": 1787656572590,
+      "formattedDate": "8/25/2026, 4:46:12 PM"
+    },
     {
       "id": "a114f4a2-843d-4e1d-931e-d2ccbb4d8ab2",
       "userId": "e49ead1c-6531-42e0-9c56-302332a2ffeb",

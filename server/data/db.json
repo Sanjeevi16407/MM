@@ -1,0 +1,60 @@
+{
+  "users": {
+    "95746b42-0dc7-481f-9468-2525e235f654": {
+      "id": "95746b42-0dc7-481f-9468-2525e235f654",
+      "username": "sanjeevi_7612",
+      "displayName": "Sanjeevi",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=sanjeevi_7612",
+      "bio": "Creator of MINGLE",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787639814624,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787639814449
+    },
+    "39912add-76d3-4ea9-a753-7b2876f8d6a2": {
+      "id": "39912add-76d3-4ea9-a753-7b2876f8d6a2",
+      "username": "alex_7612",
+      "displayName": "Alex",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=alex_7612",
+      "bio": "Building cool software",
+      "status": "online",
+      "mingleStatus": "available",
+      "isOnline": false,
+      "lastSeen": 1787639814625,
+      "privacySettings": {
+        "showOnlineStatus": true,
+        "allowSurpriseMingle": true,
+        "allowMessagesFromNonMingles": true
+      },
+      "createdAt": 1787639814452
+    }
+  },
+  "usernames": {
+    "sanjeevi_7612": "95746b42-0dc7-481f-9468-2525e235f654",
+    "alex_7612": "39912add-76d3-4ea9-a753-7b2876f8d6a2"
+  },
+  "mingles": [],
+  "messages": [
+    {
+      "id": "f4951339-d211-4e0e-9b5a-2e64897b035c",
+      "type": "text",
+      "senderId": "95746b42-0dc7-481f-9468-2525e235f654",
+      "senderUsername": "sanjeevi_7612",
+      "senderDisplayName": "Sanjeevi",
+      "senderAvatar": "https://api.dicebear.com/7.x/bottts/svg?seed=sanjeevi_7612",
+      "receiverId": "39912add-76d3-4ea9-a753-7b2876f8d6a2",
+      "content": "Hey Alex! Glad we mingled.",
+      "attachment": null,
+      "reactions": {},
+      "read": false,
+      "timestamp": 1787639814470
+    }
+  ],
+  "blocks": []
+}

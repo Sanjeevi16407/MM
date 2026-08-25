@@ -1,138 +1,261 @@
 /**
- * User Socket Event Handlers for MingleMonkey🐒
+ * MINGLE User Identity & Social Graph Socket Handlers
  */
 
 const {
-  createUser,
-  removeUserBySocket,
+  checkUsernameAvailable,
+  registerUser,
+  loginUser,
+  bindSocketToUser,
+  unbindSocket,
   getUserBySocketId,
-  updateUserStatus,
+  getUserById,
+  mingleUser,
+  unmingleUser,
+  getMingledUsers,
+  searchUsers,
+  getOnlineMinglers,
   updateUserProfile,
-  getOnlineUsersPublic,
-  getSafeUserProfile
+  updateUserStatus,
+  getPublicProfile,
+  getSocketIdByUserId
 } = require('../utils/users');
-const { validateNickname, sanitizeText } = require('../utils/validation');
 
 function registerUserHandlers(io, socket, matchmaking) {
-  // 1. user:join
-  socket.on('user:join', (data, callback) => {
+  // 1. Check Username Availability
+  socket.on('user:check_username', (username, callback) => {
+    const result = checkUsernameAvailable(username);
+    if (typeof callback === 'function') {
+      callback(result);
+    }
+  });
+
+  // 2. Register Permanent Identity
+  socket.on('user:register', (data, callback) => {
     try {
-      const validation = validateNickname(data?.nickname);
-      if (!validation.valid) {
-        if (typeof callback === 'function') callback({ success: false, error: validation.error });
-        return;
-      }
-
-      const avatar = data?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${socket.id}`;
-      const bio = sanitizeText(data?.bio) || 'Ready to chat on MingleMonkey🐒!';
-
-      const user = createUser({
-        socketId: socket.id,
-        nickname: validation.nickname,
-        avatar,
-        bio
+      const user = registerUser({
+        username: data?.username,
+        displayName: data?.displayName,
+        avatar: data?.avatar,
+        bio: data?.bio
       });
 
-      // Join individual private socket room for DMs using user's persistent UUID
+      bindSocketToUser(socket.id, user.id);
       socket.join(`user:${user.id}`);
-      // Join default general channel
-      socket.join('channel:general');
 
-      // Broadcast updated online users list
-      io.emit('user:list', getOnlineUsersPublic());
+      // Broadcast online status to network
+      io.emit('user:presence_changed', {
+        userId: user.id,
+        isOnline: true,
+        user: getPublicProfile(user)
+      });
 
       if (typeof callback === 'function') {
         callback({
           success: true,
-          user: getSafeUserProfile(user)
+          user: getPublicProfile(user)
         });
       }
     } catch (err) {
-      console.error('Error in user:join:', err);
-      if (typeof callback === 'function') callback({ success: false, error: 'Failed to join' });
+      if (typeof callback === 'function') {
+        callback({ success: false, error: err.message || 'Registration failed' });
+      }
     }
   });
 
-  // 2. user:update
-  socket.on('user:update', (data, callback) => {
-    const user = getUserBySocketId(socket.id);
-    if (!user) {
-      if (typeof callback === 'function') callback({ success: false, error: 'User not registered' });
-      return;
-    }
-
-    let updatedNickname = undefined;
-    if (data.nickname) {
-      const val = validateNickname(data.nickname);
-      if (!val.valid) {
-        if (typeof callback === 'function') callback({ success: false, error: val.error });
+  // 3. Login / Reconnect Identity
+  socket.on('user:login', (identifier, callback) => {
+    try {
+      const user = loginUser(identifier);
+      if (!user) {
+        if (typeof callback === 'function') {
+          callback({ success: false, error: 'User identity not found' });
+        }
         return;
       }
-      updatedNickname = val.nickname;
-    }
 
-    const updatedBio = data.bio !== undefined ? sanitizeText(data.bio) : undefined;
-    const updated = updateUserProfile(socket.id, {
-      nickname: updatedNickname,
-      avatar: data.avatar,
-      bio: updatedBio
-    });
+      bindSocketToUser(socket.id, user.id);
+      socket.join(`user:${user.id}`);
 
-    io.emit('user:list', getOnlineUsersPublic());
+      // Broadcast presence
+      io.emit('user:presence_changed', {
+        userId: user.id,
+        isOnline: true,
+        user: getPublicProfile(user)
+      });
 
-    if (typeof callback === 'function') {
-      callback({ success: true, user: getSafeUserProfile(updated) });
+      if (typeof callback === 'function') {
+        callback({
+          success: true,
+          user: getPublicProfile(user)
+        });
+      }
+    } catch (err) {
+      if (typeof callback === 'function') {
+        callback({ success: false, error: 'Login failed' });
+      }
     }
   });
 
-  // 3. user:status
-  socket.on('user:status', (status, callback) => {
-    const allowed = ['online', 'away', 'busy', 'in-chat'];
-    if (!allowed.includes(status)) {
-      if (typeof callback === 'function') callback({ success: false, error: 'Invalid status' });
+  // 4. Search Users / Discovery
+  socket.on('user:search', (query, callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    const results = searchUsers(query, currentUser?.id);
+    if (typeof callback === 'function') {
+      callback({ success: true, results });
+    }
+  });
+
+  // 5. Mingle with User
+  socket.on('user:mingle', (targetUserId, callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false, error: 'Not logged in' });
       return;
     }
 
-    const user = updateUserStatus(socket.id, status);
-    if (user) {
-      io.emit('user:list', getOnlineUsersPublic());
-      if (typeof callback === 'function') callback({ success: true, status: user.status });
+    const result = mingleUser(currentUser.id, targetUserId);
+    if (result.success) {
+      const targetSocketId = getSocketIdByUserId(targetUserId);
+      if (targetSocketId) {
+        // Notify target user that someone mingled with them!
+        io.to(`user:${targetUserId}`).emit('user:mingled_by', {
+          mingler: getPublicProfile(currentUser, targetUserId)
+        });
+      }
     }
-  });
 
-  // 4. user:list
-  socket.on('user:list', (callback) => {
     if (typeof callback === 'function') {
-      callback(getOnlineUsersPublic());
+      callback(result);
     }
   });
 
-  // 5. disconnect
+  // 6. Unmingle User
+  socket.on('user:unmingle', (targetUserId, callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false, error: 'Not logged in' });
+      return;
+    }
+
+    const result = unmingleUser(currentUser.id, targetUserId);
+    if (result.success) {
+      io.to(`user:${targetUserId}`).emit('user:unmingled_by', {
+        unminglerId: currentUser.id
+      });
+    }
+
+    if (typeof callback === 'function') {
+      callback(result);
+    }
+  });
+
+  // 7. Get My Mingles Network
+  socket.on('user:mingles_list', (callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false, mingles: [] });
+      return;
+    }
+
+    const mingles = getMingledUsers(currentUser.id);
+    if (typeof callback === 'function') {
+      callback({ success: true, mingles });
+    }
+  });
+
+  // 8. Get Live Online Minglers
+  socket.on('user:online_list', (callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    const onlineUsers = getOnlineMinglers(currentUser?.id);
+    if (typeof callback === 'function') {
+      callback({ success: true, users: onlineUsers });
+    }
+  });
+
+  // 9. Home Summary Data
+  socket.on('user:home_data', (callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false });
+      return;
+    }
+
+    const mingles = getMingledUsers(currentUser.id);
+    const onlineMingles = mingles.filter(m => m.isOnline);
+    const allOnline = getOnlineMinglers(currentUser.id);
+
+    if (typeof callback === 'function') {
+      callback({
+        success: true,
+        user: getPublicProfile(currentUser),
+        minglesCount: mingles.length,
+        onlineMinglesCount: onlineMingles.length,
+        onlineMingles,
+        totalOnlineCount: allOnline.length
+      });
+    }
+  });
+
+  // 10. Update Profile & Privacy Settings
+  socket.on('user:update_profile', (data, callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false, error: 'Not logged in' });
+      return;
+    }
+
+    const updated = updateUserProfile(currentUser.id, {
+      displayName: data.displayName,
+      avatar: data.avatar,
+      bio: data.bio,
+      mingleStatus: data.mingleStatus,
+      privacySettings: data.privacySettings
+    });
+
+    if (typeof callback === 'function') {
+      callback({ success: true, user: getPublicProfile(updated) });
+    }
+  });
+
+  // 11. Update Status & Mingle Status
+  socket.on('user:update_status', (data, callback) => {
+    const currentUser = getUserBySocketId(socket.id);
+    if (!currentUser) {
+      if (typeof callback === 'function') callback({ success: false, error: 'Not logged in' });
+      return;
+    }
+
+    const updated = updateUserStatus(currentUser.id, {
+      status: data.status,
+      mingleStatus: data.mingleStatus
+    });
+
+    io.emit('user:presence_changed', {
+      userId: currentUser.id,
+      isOnline: true,
+      user: getPublicProfile(updated)
+    });
+
+    if (typeof callback === 'function') {
+      callback({ success: true, user: getPublicProfile(updated) });
+    }
+  });
+
+  // 12. Disconnect Handler
   socket.on('disconnect', () => {
-    const user = getUserBySocketId(socket.id);
+    const user = unbindSocket(socket.id);
     if (user) {
-      // Clean up matchmaking if in stranger queue or paired
       if (matchmaking && typeof matchmaking.handleUserDisconnect === 'function') {
         matchmaking.handleUserDisconnect(io, user.id);
       }
 
-      // Notify the channel they left
-      if (user.currentChannel) {
-        io.to(`channel:${user.currentChannel}`).emit('channel:message', {
-          id: 'sys_' + Date.now(),
-          type: 'system',
-          channelId: user.currentChannel,
-          senderId: 'system',
-          senderName: 'MingleMonkey System',
-          senderAvatar: '',
-          content: `${user.nickname} disconnected`,
-          timestamp: Date.now()
-        });
-      }
-
-      removeUserBySocket(socket.id);
-      io.emit('user:list', getOnlineUsersPublic());
-      io.emit('user:disconnect', { userId: user.id, nickname: user.nickname });
+      io.emit('user:presence_changed', {
+        userId: user.id,
+        isOnline: false,
+        lastSeen: user.lastSeen,
+        user: getPublicProfile(user)
+      });
     }
   });
 }

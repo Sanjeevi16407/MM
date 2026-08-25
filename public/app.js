@@ -1,10 +1,9 @@
 /**
- * MingleMonkey🐒 — Real-Time Online Messaging Platform
- * Client Application Engine
+ * MINGLE 🐒 — Social Discovery & Real-Time Messaging Engine
  */
 
-// 1. SOUND NOTIFICATIONS ENGINE (Web Audio API Synthesizer)
-class MingleSound {
+// 1. SOUND EFFECTS SYNTHESIZER
+class MingleSoundFx {
   constructor() {
     this.ctx = null;
     this.enabled = localStorage.getItem('mingle_sound') !== 'false';
@@ -12,8 +11,8 @@ class MingleSound {
 
   init() {
     if (!this.ctx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) this.ctx = new AudioContextClass();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
     }
   }
 
@@ -55,7 +54,7 @@ class MingleSound {
     } catch(e) {}
   }
 
-  playMatchFound() {
+  playMingleConnect() {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
@@ -67,175 +66,215 @@ class MingleSound {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, now + idx * 0.07);
         gain.gain.setValueAtTime(0.08, now + idx * 0.07);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.22);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now + idx * 0.07);
-        osc.stop(now + idx * 0.07 + 0.2);
+        osc.stop(now + idx * 0.07 + 0.22);
       });
     } catch(e) {}
   }
 }
 
-const soundManager = new MingleSound();
+const sounds = new MingleSoundFx();
 
 // 2. CLIENT APPLICATION STATE
 const state = {
   socket: null,
-  currentUser: null, // { id, nickname, avatar, bio, status }
-  activeNavTab: 'channels', // 'channels' | 'dms' | 'stranger'
-  currentChannel: 'general',
-  activeDmPartner: null, // safe user object
-  activeStranger: null, // safe stranger user object
-  channels: [
-    { id: 'general', name: 'general', topic: 'Main hub for everyone to connect and chat', icon: 'hash', memberCount: 0 },
-    { id: 'tech-talk', name: 'tech-talk', topic: 'Talk about technology, coding, AI & gadgets', icon: 'cpu', memberCount: 0 },
-    { id: 'lounge', name: 'lounge', topic: 'Relax, share music, memes and casual conversation', icon: 'coffee', memberCount: 0 }
-  ],
-  onlineUsers: [],
-  channelMessages: new Map(), // channelId -> [messages]
-  dmMessages: new Map(), // partnerId -> [messages]
-  unreadDMs: new Map(), // partnerId -> count
-  sharedMedia: [], // list of attachments in active conversation
+  currentUser: null, // { id, username, displayName, avatar, bio, status, mingleStatus, privacySettings }
+  activeSection: 'home', // 'home' | 'chats' | 'discover' | 'online' | 'mingled' | 'surprise'
+  activeChatPartner: null, // user profile object
+  activeSurprisePartner: null,
+  minglesList: [],
+  onlineMinglers: [],
+  threads: [],
+  unreadTotal: 0,
+  attachedFile: null,
   typingTimer: null,
-  attachedFile: null, // { name, type, size, data }
-  avatarSeeds: ['Neo', 'Trinity', 'Morpheus', 'Cypher', 'Oracle', 'Ghost'],
-  selectedAvatarSeed: 'Neo'
+  usernameCheckTimer: null,
+  topSearchTimer: null,
+  avatarSeeds: ['Sanjeevi', 'Alex', 'Sarah', 'Koko', 'Leo', 'Milo'],
+  selectedAvatarSeed: 'Sanjeevi'
 };
 
-// 3. DOM ELEMENTS MAPPING
+// 3. DOM ELEMENTS
 const DOM = {
   toastContainer: document.getElementById('toastContainer'),
-  // Profile Setup Modal
-  setupModal: document.getElementById('setupModal'),
-  setupForm: document.getElementById('setupForm'),
-  modalAvatarList: document.getElementById('modalAvatarList'),
-  modalRandomizeAvatars: document.getElementById('modalRandomizeAvatars'),
-  modalNicknameInput: document.getElementById('modalNicknameInput'),
-  modalBioInput: document.getElementById('modalBioInput'),
-  setupErrorMsg: document.getElementById('setupErrorMsg'),
 
-  // Header & Global Controls
-  mobileSidebarToggle: document.getElementById('mobileSidebarToggle'),
-  connectionStatusBadge: document.getElementById('connectionStatusBadge'),
-  connectionStatusText: document.getElementById('connectionStatusText'),
-  globalSearchInput: document.getElementById('globalSearchInput'),
-  soundBtn: document.getElementById('soundBtn'),
-  soundBtnIcon: document.getElementById('soundBtnIcon'),
-  themeBtn: document.getElementById('themeBtn'),
-  themeBtnIcon: document.getElementById('themeBtnIcon'),
-  toggleDetailsBtn: document.getElementById('toggleDetailsBtn'),
-  headerProfileTrigger: document.getElementById('headerProfileTrigger'),
-  headerUserAvatar: document.getElementById('headerUserAvatar'),
-  headerUserName: document.getElementById('headerUserName'),
+  // Auth Modal
+  authModal: document.getElementById('authModal'),
+  authTabRegister: document.getElementById('authTabRegister'),
+  authTabLogin: document.getElementById('authTabLogin'),
+  registerForm: document.getElementById('registerForm'),
+  loginForm: document.getElementById('loginForm'),
+  registerAvatarList: document.getElementById('registerAvatarList'),
+  randomizeAvatarsBtn: document.getElementById('randomizeAvatarsBtn'),
+  regUsernameInput: document.getElementById('regUsernameInput'),
+  regDisplayNameInput: document.getElementById('regDisplayNameInput'),
+  regBioInput: document.getElementById('regBioInput'),
+  usernameCheckIcon: document.getElementById('usernameCheckIcon'),
+  usernameFeedback: document.getElementById('usernameFeedback'),
+  loginUsernameInput: document.getElementById('loginUsernameInput'),
+  loginErrorMsg: document.getElementById('loginErrorMsg'),
 
-  // Sidebar
-  mainSidebar: document.getElementById('mainSidebar'),
-  tabChannels: document.getElementById('tabChannels'),
-  tabDms: document.getElementById('tabDms'),
-  tabConnect: document.getElementById('tabConnect'),
-  globalDmBadge: document.getElementById('globalDmBadge'),
-  quickConnectBanner: document.getElementById('quickConnectBanner'),
-  sidebarFilterInput: document.getElementById('sidebarFilterInput'),
-  sectionChannels: document.getElementById('sectionChannels'),
-  channelsListContainer: document.getElementById('channelsListContainer'),
-  sectionOnlineUsers: document.getElementById('sectionOnlineUsers'),
-  sidebarOnlineCount: document.getElementById('sidebarOnlineCount'),
-  onlineUsersListContainer: document.getElementById('onlineUsersListContainer'),
-  sidebarUserAvatar: document.getElementById('sidebarUserAvatar'),
-  sidebarStatusDot: document.getElementById('sidebarStatusDot'),
-  sidebarUsername: document.getElementById('sidebarUsername'),
-  sidebarUserBio: document.getElementById('sidebarUserBio'),
-  sidebarStatusSelect: document.getElementById('sidebarStatusSelect'),
+  // Top Header
+  mobileMenuToggle: document.getElementById('mobileMenuToggle'),
+  brandLogoHome: document.getElementById('brandLogoHome'),
+  topSearchInput: document.getElementById('topSearchInput'),
+  topSearchDropdown: document.getElementById('topSearchDropdown'),
+  userMingleStatusSelect: document.getElementById('userMingleStatusSelect'),
+  soundToggleBtn: document.getElementById('soundToggleBtn'),
+  soundIcon: document.getElementById('soundIcon'),
+  themeToggleBtn: document.getElementById('themeToggleBtn'),
+  themeIcon: document.getElementById('themeIcon'),
+  headerUserChip: document.getElementById('headerUserChip'),
+  headerAvatar: document.getElementById('headerAvatar'),
+  headerStatusDot: document.getElementById('headerStatusDot'),
+  headerDisplayName: document.getElementById('headerDisplayName'),
+  headerUsername: document.getElementById('headerUsername'),
 
-  // Main Standard Chat Pane
-  standardChatPane: document.getElementById('standardChatPane'),
-  headerChannelIconContainer: document.getElementById('headerChannelIconContainer'),
-  headerChannelIcon: document.getElementById('headerChannelIcon'),
-  currentChatTitle: document.getElementById('currentChatTitle'),
-  currentChatTypeBadge: document.getElementById('currentChatTypeBadge'),
-  currentChatTopic: document.getElementById('currentChatTopic'),
-  currentChatMembersCount: document.getElementById('currentChatMembersCount'),
-  memberCountNumber: document.getElementById('memberCountNumber'),
-  clearChatHistoryBtn: document.getElementById('clearChatHistoryBtn'),
-  chatMessagesFeed: document.getElementById('chatMessagesFeed'),
-  liveTypingStrip: document.getElementById('liveTypingStrip'),
-  liveTypingText: document.getElementById('liveTypingText'),
+  // Left Nav Sidebar
+  mainNavSidebar: document.getElementById('mainNavSidebar'),
+  navBtnHome: document.getElementById('navBtnHome'),
+  navBtnChats: document.getElementById('navBtnChats'),
+  navChatsBadge: document.getElementById('navChatsBadge'),
+  navBtnDiscover: document.getElementById('navBtnDiscover'),
+  navBtnOnline: document.getElementById('navBtnOnline'),
+  navOnlineBadge: document.getElementById('navOnlineBadge'),
+  navBtnMingled: document.getElementById('navBtnMingled'),
+  navMingledBadge: document.getElementById('navMingledBadge'),
+  quickSurpriseBanner: document.getElementById('quickSurpriseBanner'),
+  sidebarThreadsContainer: document.getElementById('sidebarThreadsContainer'),
+  footerProfileBtn: document.getElementById('footerProfileBtn'),
+  footerAvatar: document.getElementById('footerAvatar'),
+  footerDisplayName: document.getElementById('footerDisplayName'),
+  footerUsername: document.getElementById('footerUsername'),
+  profileSettingsBtn: document.getElementById('profileSettingsBtn'),
 
-  // Attachment Preview
-  inputAttachmentBar: document.getElementById('inputAttachmentBar'),
-  previewThumbnailContainer: document.getElementById('previewThumbnailContainer'),
-  previewImageElement: document.getElementById('previewImageElement'),
-  previewDocIcon: document.getElementById('previewDocIcon'),
-  previewFileName: document.getElementById('previewFileName'),
-  previewFileSize: document.getElementById('previewFileSize'),
-  cancelAttachmentBtn: document.getElementById('cancelAttachmentBtn'),
+  // Workpanes
+  sectionHomePane: document.getElementById('sectionHomePane'),
+  sectionChatsPane: document.getElementById('sectionChatsPane'),
+  sectionDiscoverPane: document.getElementById('sectionDiscoverPane'),
+  sectionOnlinePane: document.getElementById('sectionOnlinePane'),
+  sectionMingledPane: document.getElementById('sectionMingledPane'),
+  sectionSurprisePane: document.getElementById('sectionSurprisePane'),
 
-  // Emoji Picker Drawer
-  emojiPickerDrawer: document.getElementById('emojiPickerDrawer'),
-  emojiGridButtons: document.getElementById('emojiGridButtons'),
+  // Home Elements
+  homeHeroName: document.getElementById('homeHeroName'),
+  homeStatOnlineMingles: document.getElementById('homeStatOnlineMingles'),
+  homeStatTotalMingles: document.getElementById('homeStatTotalMingles'),
+  homeStatTotalOnline: document.getElementById('homeStatTotalOnline'),
+  homeOnlineMinglesGrid: document.getElementById('homeOnlineMinglesGrid'),
+  homeViewAllMingledBtn: document.getElementById('homeViewAllMingledBtn'),
+  homeDiscoverBtn: document.getElementById('homeDiscoverBtn'),
+  homeSurpriseBtn: document.getElementById('homeSurpriseBtn'),
 
-  // Chat Input Form
-  mainChatForm: document.getElementById('mainChatForm'),
-  fileAttachmentInput: document.getElementById('fileAttachmentInput'),
-  attachFileBtn: document.getElementById('attachFileBtn'),
-  toggleEmojiBtn: document.getElementById('toggleEmojiBtn'),
-  chatMessageInput: document.getElementById('chatMessageInput'),
-  sendMessageBtn: document.getElementById('sendMessageBtn'),
+  // Active Chat Elements
+  chatPartnerAvatar: document.getElementById('chatPartnerAvatar'),
+  chatPartnerStatusDot: document.getElementById('chatPartnerStatusDot'),
+  chatPartnerDisplayName: document.getElementById('chatPartnerDisplayName'),
+  chatPartnerUsername: document.getElementById('chatPartnerUsername'),
+  chatMingleStateBadge: document.getElementById('chatMingleStateBadge'),
+  chatPartnerBio: document.getElementById('chatPartnerBio'),
+  chatToggleMingleBtn: document.getElementById('chatToggleMingleBtn'),
+  chatProfileToggleBtn: document.getElementById('chatProfileToggleBtn'),
+  clearChatViewBtn: document.getElementById('clearChatViewBtn'),
+  chatMessagesStream: document.getElementById('chatMessagesStream'),
+  chatTypingIndicator: document.getElementById('chatTypingIndicator'),
+  chatTypingText: document.getElementById('chatTypingText'),
+  chatAttachmentPreviewBar: document.getElementById('chatAttachmentPreviewBar'),
+  attachmentImagePreview: document.getElementById('attachmentImagePreview'),
+  attachmentDocIcon: document.getElementById('attachmentDocIcon'),
+  attachmentNameText: document.getElementById('attachmentNameText'),
+  attachmentSizeText: document.getElementById('attachmentSizeText'),
+  cancelChatAttachmentBtn: document.getElementById('cancelChatAttachmentBtn'),
+  chatEmojiDrawer: document.getElementById('chatEmojiDrawer'),
+  chatEmojiGrid: document.getElementById('chatEmojiGrid'),
+  activeChatForm: document.getElementById('activeChatForm'),
+  chatFileInput: document.getElementById('chatFileInput'),
+  chatAttachBtn: document.getElementById('chatAttachBtn'),
+  chatEmojiToggleBtn: document.getElementById('chatEmojiToggleBtn'),
+  chatTextInput: document.getElementById('chatTextInput'),
 
-  // Stranger Matchmaking View
-  strangerChatPane: document.getElementById('strangerChatPane'),
-  strangerHeaderTitle: document.getElementById('strangerHeaderTitle'),
-  strangerHeaderSubtitle: document.getElementById('strangerHeaderSubtitle'),
-  strangerNextPersonBtn: document.getElementById('strangerNextPersonBtn'),
-  strangerExitBtn: document.getElementById('strangerExitBtn'),
-  strangerSearchingOrb: document.getElementById('strangerSearchingOrb'),
-  cancelSearchingStrangerBtn: document.getElementById('cancelSearchingStrangerBtn'),
-  strangerActiveChatContainer: document.getElementById('strangerActiveChatContainer'),
-  strangerPartnerAvatar: document.getElementById('strangerPartnerAvatar'),
-  strangerPartnerName: document.getElementById('strangerPartnerName'),
-  strangerPartnerBio: document.getElementById('strangerPartnerBio'),
-  strangerMessagesFeed: document.getElementById('strangerMessagesFeed'),
-  strangerTypingIndicator: document.getElementById('strangerTypingIndicator'),
-  strangerChatForm: document.getElementById('strangerChatForm'),
-  strangerMessageInput: document.getElementById('strangerMessageInput'),
+  // Discover & Lists
+  discoverSearchInput: document.getElementById('discoverSearchInput'),
+  discoverResultsContainer: document.getElementById('discoverResultsContainer'),
+  onlinePeopleGrid: document.getElementById('onlinePeopleGrid'),
+  refreshOnlineBtn: document.getElementById('refreshOnlineBtn'),
+  mingledNetworkGrid: document.getElementById('mingledNetworkGrid'),
+  mingledCountPill: document.getElementById('mingledCountPill'),
 
-  // Right Details Panel
-  rightDetailsPanel: document.getElementById('rightDetailsPanel'),
-  closeDetailsPanelBtn: document.getElementById('closeDetailsPanelBtn'),
-  detailsAvatar: document.getElementById('detailsAvatar'),
-  detailsStatusDot: document.getElementById('detailsStatusDot'),
-  detailsTitle: document.getElementById('detailsTitle'),
-  detailsSubtitle: document.getElementById('detailsSubtitle'),
-  detailsAboutText: document.getElementById('detailsAboutText'),
-  detailsMediaCount: document.getElementById('detailsMediaCount'),
-  detailsMediaGrid: document.getElementById('detailsMediaGrid'),
+  // Surprise Mingle Elements
+  surpriseHeaderTitle: document.getElementById('surpriseHeaderTitle'),
+  surpriseHeaderSubtitle: document.getElementById('surpriseHeaderSubtitle'),
+  surpriseMingleNowBtn: document.getElementById('surpriseMingleNowBtn'),
+  surpriseNextBtn: document.getElementById('surpriseNextBtn'),
+  surpriseExitBtn: document.getElementById('surpriseExitBtn'),
+  surpriseRadarState: document.getElementById('surpriseRadarState'),
+  cancelSurpriseSearchBtn: document.getElementById('cancelSurpriseSearchBtn'),
+  surpriseActiveChatState: document.getElementById('surpriseActiveChatState'),
+  surprisePartnerAvatar: document.getElementById('surprisePartnerAvatar'),
+  surprisePartnerName: document.getElementById('surprisePartnerName'),
+  surprisePartnerUsername: document.getElementById('surprisePartnerUsername'),
+  surprisePartnerBio: document.getElementById('surprisePartnerBio'),
+  surpriseMessagesStream: document.getElementById('surpriseMessagesStream'),
+  surpriseTypingStrip: document.getElementById('surpriseTypingStrip'),
+  surpriseChatForm: document.getElementById('surpriseChatForm'),
+  surpriseTextInput: document.getElementById('surpriseTextInput'),
 
-  // Lightbox Modal
+  // Right Profile Drawer
+  rightProfileDrawer: document.getElementById('rightProfileDrawer'),
+  closeRightDrawerBtn: document.getElementById('closeRightDrawerBtn'),
+  drawerAvatar: document.getElementById('drawerAvatar'),
+  drawerStatusDot: document.getElementById('drawerStatusDot'),
+  drawerDisplayName: document.getElementById('drawerDisplayName'),
+  drawerUsername: document.getElementById('drawerUsername'),
+  drawerLastSeen: document.getElementById('drawerLastSeen'),
+  drawerMingleBtn: document.getElementById('drawerMingleBtn'),
+  drawerMessageBtn: document.getElementById('drawerMessageBtn'),
+  drawerBio: document.getElementById('drawerBio'),
+  drawerMinglesCount: document.getElementById('drawerMinglesCount'),
+  drawerMingleStatusText: document.getElementById('drawerMingleStatusText'),
+  drawerMediaCount: document.getElementById('drawerMediaCount'),
+  drawerMediaGrid: document.getElementById('drawerMediaGrid'),
+
+  // Settings Modal
+  profileSettingsModal: document.getElementById('profileSettingsModal'),
+  closeSettingsModalBtn: document.getElementById('closeSettingsModalBtn'),
+  updateProfileForm: document.getElementById('updateProfileForm'),
+  settingsModalUsername: document.getElementById('settingsModalUsername'),
+  settingsDisplayNameInput: document.getElementById('settingsDisplayNameInput'),
+  settingsBioInput: document.getElementById('settingsBioInput'),
+  settingShowOnlineStatus: document.getElementById('settingShowOnlineStatus'),
+  settingAllowSurpriseMingle: document.getElementById('settingAllowSurpriseMingle'),
+  settingAllowNonMingleMessages: document.getElementById('settingAllowNonMingleMessages'),
+  switchAccountBtn: document.getElementById('switchAccountBtn'),
+
+  // Lightbox
   imageLightboxModal: document.getElementById('imageLightboxModal'),
   lightboxImageElement: document.getElementById('lightboxImageElement')
 };
 
 // 4. INITIALIZATION
-function initializeMingleMonkey() {
+function initApp() {
   lucide.createIcons();
-  setupThemeState();
-  setupSoundButtonUI();
+  setupTheme();
+  setupSoundUI();
   setupAvatarPicker();
   setupEventListeners();
-  initSocketConnection();
+  initSocket();
+  checkExistingSession();
 }
 
-// 5. TOAST NOTIFICATION HELPER
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   const bgClass = type === 'error' 
     ? 'bg-rose-950/90 text-rose-300 border border-rose-500/40' 
-    : (type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40' : 'bg-slate-900/90 text-cyan-300 border border-cyan-500/40');
+    : (type === 'success' ? 'bg-amber-950/90 text-amber-300 border border-amber-500/40' : 'bg-slate-900/90 text-slate-200 border border-slate-700');
   
   toast.className = `nexa-toast ${bgClass}`;
   toast.innerHTML = `
-    <i data-lucide="${type === 'error' ? 'alert-circle' : (type === 'success' ? 'check-circle-2' : 'info')}" class="w-4 h-4 shrink-0"></i>
+    <i data-lucide="${type === 'error' ? 'alert-circle' : (type === 'success' ? 'sparkles' : 'info')}" class="w-4 h-4 shrink-0"></i>
     <span>${escapeHtml(message)}</span>
   `;
 
@@ -250,25 +289,67 @@ function showToast(message, type = 'info') {
   }, 3500);
 }
 
-// 6. AVATAR PICKER IN PROFILE SETUP
+// 5. SESSION & IDENTITY SETUP
+function checkExistingSession() {
+  const savedUserJson = localStorage.getItem('mingle_user');
+  if (savedUserJson) {
+    try {
+      const user = JSON.parse(savedUserJson);
+      if (user && user.username) {
+        state.socket.emit('user:login', user.username, (res) => {
+          if (res?.success) {
+            setCurrentUser(res.user);
+            DOM.authModal.classList.add('hidden');
+            loadHomeData();
+          } else {
+            DOM.authModal.classList.remove('hidden');
+          }
+        });
+        return;
+      }
+    } catch(e) {}
+  }
+  DOM.authModal.classList.remove('hidden');
+}
+
+function setCurrentUser(user) {
+  state.currentUser = user;
+  localStorage.setItem('mingle_user', JSON.stringify(user));
+
+  // Update Top Bar & Footers
+  DOM.headerAvatar.src = user.avatar;
+  DOM.headerDisplayName.textContent = user.displayName;
+  DOM.headerUsername.textContent = `@${user.username}`;
+  DOM.footerAvatar.src = user.avatar;
+  DOM.footerDisplayName.textContent = user.displayName;
+  DOM.footerUsername.textContent = `@${user.username}`;
+  DOM.homeHeroName.textContent = user.displayName;
+
+  DOM.userMingleStatusSelect.value = user.mingleStatus || 'available';
+
+  // Load Initial Hub
+  loadHomeData();
+  refreshThreads();
+}
+
 function setupAvatarPicker() {
-  DOM.modalAvatarList.innerHTML = '';
+  DOM.registerAvatarList.innerHTML = '';
   state.avatarSeeds.forEach((seed, idx) => {
-    const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+    const url = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `w-11 h-11 rounded-xl p-0.5 border-2 transition overflow-hidden ${
-      idx === 0 ? 'border-cyan-400 scale-105 ring-2 ring-cyan-500/30' : 'border-transparent opacity-60 hover:opacity-100'
+    btn.className = `w-11 h-11 rounded-2xl p-0.5 border-2 transition overflow-hidden ${
+      idx === 0 ? 'border-amber-400 scale-105 ring-2 ring-amber-500/30' : 'border-transparent opacity-60 hover:opacity-100'
     }`;
-    btn.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-cover rounded-lg bg-slate-800">`;
+    btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-xl bg-slate-800">`;
     btn.onclick = () => {
       state.selectedAvatarSeed = seed;
-      document.querySelectorAll('#modalAvatarList button').forEach(b => {
-        b.className = 'w-11 h-11 rounded-xl p-0.5 border-2 border-transparent opacity-60 hover:opacity-100 transition overflow-hidden';
+      document.querySelectorAll('#registerAvatarList button').forEach(b => {
+        b.className = 'w-11 h-11 rounded-2xl p-0.5 border-2 border-transparent opacity-60 hover:opacity-100 transition overflow-hidden';
       });
-      btn.className = 'w-11 h-11 rounded-xl p-0.5 border-2 border-cyan-400 scale-105 ring-2 ring-cyan-500/30 transition overflow-hidden';
+      btn.className = 'w-11 h-11 rounded-2xl p-0.5 border-2 border-amber-400 scale-105 ring-2 ring-amber-500/30 transition overflow-hidden';
     };
-    DOM.modalAvatarList.appendChild(btn);
+    DOM.registerAvatarList.appendChild(btn);
   });
 }
 
@@ -278,410 +359,505 @@ function randomizeAvatars() {
   setupAvatarPicker();
 }
 
-// 7. SOCKET.IO CONNECTION & EVENT HANDLING
-function initSocketConnection() {
+// 6. SOCKET.IO EVENTS & SYNCHRONIZATION
+function initSocket() {
   state.socket = io({
     reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000
+    reconnectionAttempts: 10
   });
 
-  // Socket Connection Status
-  state.socket.on('connect', () => {
-    DOM.connectionStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 px-2 py-0.5 rounded-full ml-2';
-    DOM.connectionStatusText.textContent = 'Connected';
-  });
+  // Real-time presence change from network
+  state.socket.on('user:presence_changed', (data) => {
+    // If we're looking at online people or home, refresh
+    if (state.activeSection === 'home') loadHomeData();
+    if (state.activeSection === 'online') loadOnlinePeople();
+    if (state.activeSection === 'mingled') loadMingledNetwork();
 
-  state.socket.on('disconnect', () => {
-    DOM.connectionStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-medium text-amber-400 bg-amber-950/30 border border-amber-500/20 px-2 py-0.5 rounded-full ml-2';
-    DOM.connectionStatusText.textContent = 'Reconnecting...';
-  });
-
-  // User List update
-  state.socket.on('user:list', (users) => {
-    state.onlineUsers = users;
-    updateOnlinePresenceUI();
-  });
-
-  // Channel Message Received
-  state.socket.on('channel:message', (msg) => {
-    if (!state.channelMessages.has(msg.channelId)) {
-      state.channelMessages.set(msg.channelId, []);
-    }
-    state.channelMessages.get(msg.channelId).push(msg);
-
-    if (state.activeNavTab === 'channels' && state.currentChannel === msg.channelId) {
-      appendChatMessage(msg, DOM.chatMessagesFeed);
-      if (msg.senderId !== state.currentUser?.id && msg.type !== 'system') {
-        soundManager.playReceive();
-      }
-    }
-  });
-
-  // Channel Member Count Update
-  state.socket.on('channel:member_count', (data) => {
-    const ch = state.channels.find(c => c.id === data.channelId);
-    if (ch) {
-      ch.memberCount = data.memberCount;
-      if (state.activeNavTab === 'channels' && state.currentChannel === data.channelId) {
-        DOM.memberCountNumber.textContent = `${data.memberCount} members`;
-      }
-      renderChannelsList();
-    }
-  });
-
-  // Channel Typing
-  state.socket.on('channel:typing', (data) => {
-    if (state.activeNavTab === 'channels' && state.currentChannel === data.channelId) {
-      if (data.isTyping) {
-        DOM.liveTypingText.textContent = `${data.nickname} is typing...`;
-        DOM.liveTypingStrip.classList.remove('opacity-0');
-      } else {
-        DOM.liveTypingStrip.classList.add('opacity-0');
-      }
+    // If chat partner updated
+    if (state.activeChatPartner && state.activeChatPartner.id === data.userId) {
+      state.activeChatPartner.isOnline = data.isOnline;
+      state.activeChatPartner.lastSeen = data.lastSeen;
+      updateChatHeaderPresence(state.activeChatPartner);
     }
   });
 
   // Direct Message Received
   state.socket.on('dm:message', (msg) => {
-    const partnerId = msg.senderId === state.currentUser?.id ? msg.receiverId : msg.senderId;
-    
-    if (!state.dmMessages.has(partnerId)) {
-      state.dmMessages.set(partnerId, []);
-    }
-    state.dmMessages.get(partnerId).push(msg);
+    const isMe = msg.senderId === state.currentUser?.id;
+    const partnerId = isMe ? msg.receiverId : msg.senderId;
 
-    // If active conversation
-    if (state.activeNavTab === 'dms' && state.activeDmPartner?.id === partnerId) {
-      appendChatMessage(msg, DOM.chatMessagesFeed);
-      if (msg.senderId !== state.currentUser?.id) {
-        soundManager.playReceive();
-        // Emit read receipt
+    if (state.activeSection === 'chats' && state.activeChatPartner?.id === partnerId) {
+      appendChatMessage(msg, DOM.chatMessagesStream);
+      if (!isMe) {
+        sounds.playReceive();
         state.socket.emit('dm:read', { senderId: partnerId });
       }
     } else {
-      // Unread badge increment
-      if (msg.senderId !== state.currentUser?.id) {
-        const count = state.unreadDMs.get(partnerId) || 0;
-        state.unreadDMs.set(partnerId, count + 1);
-        updateGlobalDmBadge();
-        renderOnlineUsersList();
-        soundManager.playReceive();
-        showToast(`New message from ${msg.senderName}`, 'info');
+      if (!isMe) {
+        sounds.playReceive();
+        showToast(`💬 Message from ${msg.senderDisplayName}`, 'info');
       }
     }
+    refreshThreads();
   });
 
-  // DM Typing
+  // Typing signal
   state.socket.on('dm:typing', (data) => {
-    if (state.activeNavTab === 'dms' && state.activeDmPartner?.id === data.senderId) {
+    if (state.activeSection === 'chats' && state.activeChatPartner?.id === data.senderId) {
       if (data.isTyping) {
-        DOM.liveTypingText.textContent = `${data.senderName} is typing...`;
-        DOM.liveTypingStrip.classList.remove('opacity-0');
+        DOM.chatTypingText.textContent = `${data.senderDisplayName} is typing...`;
+        DOM.chatTypingIndicator.classList.remove('opacity-0');
       } else {
-        DOM.liveTypingStrip.classList.add('opacity-0');
+        DOM.chatTypingIndicator.classList.add('opacity-0');
       }
     }
   });
 
-  // DM Read Receipt
+  // Read receipt
   state.socket.on('dm:read', (data) => {
-    if (state.activeNavTab === 'dms' && state.activeDmPartner?.id === data.readBy) {
-      document.querySelectorAll('.dm-read-status').forEach(el => {
+    if (state.activeSection === 'chats' && state.activeChatPartner?.id === data.readBy) {
+      document.querySelectorAll('.msg-read-status').forEach(el => {
         el.textContent = '✓✓ Read';
-        el.className = 'dm-read-status text-[10px] text-cyan-400 font-semibold';
+        el.className = 'msg-read-status text-[10px] text-amber-400 font-semibold';
       });
     }
   });
 
-  // Message Reaction Updated
-  state.socket.on('message:reaction', (data) => {
-    updateMessageReactionsInDOM(data.messageId, data.reactions);
-  });
-
-  // Message Deleted
-  state.socket.on('message:delete', (data) => {
-    const el = document.getElementById(`msg_${data.messageId}`);
-    if (el) {
-      el.style.opacity = '0';
-      el.style.transform = 'scale(0.95)';
-      el.style.transition = 'all 0.2s ease';
-      setTimeout(() => el.remove(), 200);
+  // Mingle notification when someone mingles with us
+  state.socket.on('user:mingled_by', (data) => {
+    sounds.playMingleConnect();
+    showToast(`🎉 @${data.mingler.username} mingled with you!`, 'success');
+    loadHomeData();
+    if (state.activeSection === 'mingled') loadMingledNetwork();
+    if (state.activeChatPartner && state.activeChatPartner.id === data.mingler.id) {
+      state.activeChatPartner.isMingled = true;
+      updateChatHeaderPresence(state.activeChatPartner);
     }
   });
 
-  // Matchmaking Events
-  state.socket.on('match:waiting', () => {
-    DOM.strangerSearchingOrb.classList.remove('hidden');
-    DOM.strangerActiveChatContainer.classList.add('hidden');
-    DOM.strangerHeaderTitle.textContent = 'Searching...';
-    DOM.strangerHeaderSubtitle.textContent = 'Looking for someone online';
+  state.socket.on('user:unmingled_by', (data) => {
+    showToast(`Unmingled connection removed`, 'info');
+    loadHomeData();
+    if (state.activeSection === 'mingled') loadMingledNetwork();
+    if (state.activeChatPartner && state.activeChatPartner.id === data.unminglerId) {
+      state.activeChatPartner.isMingled = false;
+      updateChatHeaderPresence(state.activeChatPartner);
+    }
   });
 
-  state.socket.on('match:found', (data) => {
-    state.activeStranger = data.partner;
-    DOM.strangerSearchingOrb.classList.add('hidden');
-    DOM.strangerActiveChatContainer.classList.remove('hidden');
-    
-    DOM.strangerHeaderTitle.textContent = data.partner.nickname;
-    DOM.strangerHeaderSubtitle.textContent = 'Connected in random chat';
-    DOM.strangerPartnerName.textContent = data.partner.nickname;
-    DOM.strangerPartnerBio.textContent = data.partner.bio || 'Online stranger';
-    DOM.strangerPartnerAvatar.src = data.partner.avatar;
-
-    DOM.strangerMessagesFeed.innerHTML = '';
-    appendSystemMessage(`🎉 You are connected with ${data.partner.nickname}! Say hello!`, DOM.strangerMessagesFeed);
-    
-    soundManager.playMatchFound();
-    showToast(`Connected with ${data.partner.nickname}!`, 'success');
+  // Surprise Mingle Events
+  state.socket.on('surprise:waiting', () => {
+    DOM.surpriseRadarState.classList.remove('hidden');
+    DOM.surpriseActiveChatState.classList.add('hidden');
+    DOM.surpriseMingleNowBtn.classList.add('hidden');
   });
 
-  state.socket.on('match:message', (msg) => {
-    appendChatMessage(msg, DOM.strangerMessagesFeed);
+  state.socket.on('surprise:matched', (data) => {
+    state.activeSurprisePartner = data.partner;
+    DOM.surpriseRadarState.classList.add('hidden');
+    DOM.surpriseActiveChatState.classList.remove('hidden');
+    DOM.surpriseMingleNowBtn.classList.remove('hidden');
+
+    DOM.surprisePartnerAvatar.src = data.partner.avatar;
+    DOM.surprisePartnerName.textContent = data.partner.displayName;
+    DOM.surprisePartnerUsername.textContent = `@${data.partner.username}`;
+    DOM.surprisePartnerBio.textContent = data.partner.bio || 'Surprise Mingle Match';
+
+    DOM.surpriseMessagesStream.innerHTML = '';
+    appendSystemMessage(`✨ You are connected with ${data.partner.displayName} (@${data.partner.username})! Say hello or click Mingle to connect permanently.`, DOM.surpriseMessagesStream);
+
+    sounds.playMingleConnect();
+    showToast(`Connected with @${data.partner.username}!`, 'success');
+  });
+
+  state.socket.on('surprise:message', (msg) => {
+    appendChatMessage(msg, DOM.surpriseMessagesStream);
     if (msg.senderId !== state.currentUser?.id) {
-      soundManager.playReceive();
+      sounds.playReceive();
     }
   });
 
-  state.socket.on('match:typing', (data) => {
+  state.socket.on('surprise:typing', (data) => {
     if (data.isTyping) {
-      DOM.strangerTypingIndicator.classList.remove('opacity-0');
+      DOM.surpriseTypingStrip.classList.remove('opacity-0');
     } else {
-      DOM.strangerTypingIndicator.classList.add('opacity-0');
+      DOM.surpriseTypingStrip.classList.add('opacity-0');
     }
   });
 
-  state.socket.on('match:partner-left', (data) => {
-    appendSystemMessage(`⚠️ ${data.message}`, DOM.strangerMessagesFeed);
-    DOM.strangerHeaderTitle.textContent = 'Stranger Left';
-    DOM.strangerHeaderSubtitle.textContent = 'Click "Next Person" to find another match';
-    state.activeStranger = null;
-    showToast('Your stranger has left the chat.', 'info');
+  state.socket.on('surprise:partner-left', (data) => {
+    appendSystemMessage(`⚠️ ${data.message}`, DOM.surpriseMessagesStream);
+    DOM.surpriseHeaderTitle.textContent = 'Match Disconnected';
+    state.activeSurprisePartner = null;
+    DOM.surpriseMingleNowBtn.classList.add('hidden');
+    showToast('Your surprise match has disconnected.', 'info');
   });
 }
 
-// 8. SIDEBAR & NAVIGATION CONTROLS
-function updateOnlinePresenceUI() {
-  const count = state.onlineUsers.length;
-  DOM.sidebarOnlineCount.textContent = count;
-  renderOnlineUsersList();
-  renderChannelsList();
-}
+// 7. HUB NAVIGATION & WORKPANE SWITCHER
+function switchSection(sectionName) {
+  state.activeSection = sectionName;
 
-function renderChannelsList() {
-  const filter = DOM.sidebarFilterInput.value.toLowerCase().trim();
-  DOM.channelsListContainer.innerHTML = '';
+  // Update Nav Hub Button Classes
+  [DOM.navBtnHome, DOM.navBtnChats, DOM.navBtnDiscover, DOM.navBtnOnline, DOM.navBtnMingled].forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === sectionName);
+  });
 
-  state.channels
-    .filter(ch => ch.name.toLowerCase().includes(filter))
-    .forEach(channel => {
-      const isActive = state.activeNavTab === 'channels' && state.currentChannel === channel.id;
-      const item = document.createElement('div');
-      item.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition select-none ${
-        isActive 
-          ? 'bg-cyan-500/15 text-cyan-400 font-bold border border-cyan-500/30' 
-          : 'hover:bg-slate-900/60 text-slate-300'
-      }`;
+  // Hide All Panes
+  DOM.sectionHomePane.classList.add('hidden');
+  DOM.sectionChatsPane.classList.add('hidden');
+  DOM.sectionDiscoverPane.classList.add('hidden');
+  DOM.sectionOnlinePane.classList.add('hidden');
+  DOM.sectionMingledPane.classList.add('hidden');
+  DOM.sectionSurprisePane.classList.add('hidden');
 
-      item.innerHTML = `
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-7 h-7 rounded-lg ${isActive ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400'} flex items-center justify-center text-xs font-bold shrink-0">
-            <i data-lucide="${channel.icon || 'hash'}" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="truncate">
-            <p class="text-xs font-semibold truncate">#${channel.name}</p>
-          </div>
-        </div>
-        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 font-mono">${channel.memberCount || 0}</span>
-      `;
+  // Show Active Pane
+  if (sectionName === 'home') {
+    DOM.sectionHomePane.classList.remove('hidden');
+    loadHomeData();
+  } else if (sectionName === 'chats') {
+    DOM.sectionChatsPane.classList.remove('hidden');
+  } else if (sectionName === 'discover') {
+    DOM.sectionDiscoverPane.classList.remove('hidden');
+    DOM.discoverSearchInput.focus();
+  } else if (sectionName === 'online') {
+    DOM.sectionOnlinePane.classList.remove('hidden');
+    loadOnlinePeople();
+  } else if (sectionName === 'mingled') {
+    DOM.sectionMingledPane.classList.remove('hidden');
+    loadMingledNetwork();
+  } else if (sectionName === 'surprise') {
+    DOM.sectionSurprisePane.classList.remove('hidden');
+    state.socket.emit('surprise:find');
+  }
 
-      item.onclick = () => switchToChannel(channel.id);
-      DOM.channelsListContainer.appendChild(item);
-    });
-
+  // Close mobile sidebar on selection
+  DOM.mainNavSidebar.classList.add('-translate-x-full');
   lucide.createIcons();
 }
 
-function renderOnlineUsersList() {
-  const filter = DOM.sidebarFilterInput.value.toLowerCase().trim();
-  DOM.onlineUsersListContainer.innerHTML = '';
+// 8. SECTION LOADERS
+function loadHomeData() {
+  state.socket.emit('user:home_data', (res) => {
+    if (res?.success) {
+      DOM.homeStatOnlineMingles.textContent = res.onlineMinglesCount;
+      DOM.homeStatTotalMingles.textContent = res.minglesCount;
+      DOM.homeStatTotalOnline.textContent = res.totalOnlineCount;
+      DOM.navOnlineBadge.textContent = res.totalOnlineCount;
+      DOM.navMingledBadge.textContent = res.minglesCount;
 
-  const otherUsers = state.onlineUsers.filter(u => u.id !== state.currentUser?.id && u.nickname.toLowerCase().includes(filter));
+      renderHomeOnlineMingles(res.onlineMingles);
+    }
+  });
+}
 
-  if (otherUsers.length === 0) {
-    DOM.onlineUsersListContainer.innerHTML = `
-      <div class="p-4 text-center text-xs text-slate-500">
-        No other users online yet.<br><span class="text-[11px] text-slate-600">Open another browser window to test!</span>
+function renderHomeOnlineMingles(mingles) {
+  DOM.homeOnlineMinglesGrid.innerHTML = '';
+  if (!mingles || mingles.length === 0) {
+    DOM.homeOnlineMinglesGrid.innerHTML = `
+      <div class="col-span-full py-8 text-center bg-slate-900/40 rounded-2xl border border-slate-800 p-6">
+        <p class="text-xs text-slate-400">None of your mingled connections are online right now.</p>
+        <button onclick="switchSection('discover')" class="mt-2 text-xs text-amber-400 hover:underline font-bold">Discover & Mingle with new people →</button>
       </div>
     `;
     return;
   }
 
-  otherUsers.forEach(user => {
-    const isActive = state.activeNavTab === 'dms' && state.activeDmPartner?.id === user.id;
-    const unread = state.unreadDMs.get(user.id) || 0;
-    const statusClass = user.status === 'away' ? 'status-away' : (user.status === 'busy' ? 'status-busy' : (user.status === 'in-chat' ? 'status-in-chat' : 'status-online'));
+  mingles.forEach(user => {
+    const card = document.createElement('div');
+    card.className = 'p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 transition flex items-center justify-between shadow-sm';
+    card.innerHTML = `
+      <div class="flex items-center gap-3 min-w-0 cursor-pointer" onclick="openChatWithUser('${user.id}')">
+        <div class="relative shrink-0">
+          <img src="${user.avatar}" class="w-10 h-10 rounded-full bg-slate-800 object-cover border border-slate-700">
+          <span class="status-indicator status-online bottom-0 right-0"></span>
+        </div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">${escapeHtml(user.displayName)}</p>
+          <p class="text-[10px] text-amber-400/80 font-mono truncate">@${user.username}</p>
+        </div>
+      </div>
+      <button onclick="openChatWithUser('${user.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 text-xs font-bold transition">
+        Message
+      </button>
+    `;
+    DOM.homeOnlineMinglesGrid.appendChild(card);
+  });
+}
 
+function loadOnlinePeople() {
+  state.socket.emit('user:online_list', (res) => {
+    if (res?.success) {
+      renderUserCardsGrid(res.users, DOM.onlinePeopleGrid, 'No one else is online right now. Open another window to test!');
+    }
+  });
+}
+
+function loadMingledNetwork() {
+  state.socket.emit('user:mingles_list', (res) => {
+    if (res?.success) {
+      DOM.mingledCountPill.textContent = res.mingles.length;
+      renderUserCardsGrid(res.mingles, DOM.mingledNetworkGrid, 'You haven\'t mingled with anyone yet. Search or use Discover to find friends!');
+    }
+  });
+}
+
+function renderUserCardsGrid(users, container, emptyText) {
+  container.innerHTML = '';
+  if (!users || users.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-xs text-slate-400 bg-slate-900/40 rounded-3xl border border-slate-800 p-8">
+        ${escapeHtml(emptyText)}
+      </div>
+    `;
+    return;
+  }
+
+  users.forEach(user => {
+    const card = document.createElement('div');
+    card.className = 'p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between space-y-3';
+    
+    const statusDotClass = user.isOnline ? 'status-online' : 'status-offline';
+    const lastSeenText = user.isOnline ? '● Online' : `○ Last seen ${formatLastSeen(user.lastSeen)}`;
+    const statusTextColor = user.isOnline ? 'text-emerald-400' : 'text-slate-500';
+
+    card.innerHTML = `
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="relative shrink-0 cursor-pointer" onclick="openProfileDrawer('${user.id}')">
+          <img src="${user.avatar}" class="w-11 h-11 rounded-2xl bg-slate-800 object-cover border border-slate-700">
+          <span class="status-indicator ${statusDotClass} bottom-0 right-0"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-white truncate cursor-pointer hover:text-amber-400" onclick="openProfileDrawer('${user.id}')">${escapeHtml(user.displayName)}</h4>
+            <span class="text-[10px] font-mono ${statusTextColor}">${lastSeenText}</span>
+          </div>
+          <p class="text-[11px] text-amber-400/90 font-mono">@${user.username}</p>
+          <p class="text-[11px] text-slate-400 truncate mt-1">${escapeHtml(user.bio || 'Happy to mingle!')}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+        ${user.isMingled ? `
+          <button onclick="handleMingleToggle('${user.id}', true)" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 text-xs font-bold border border-slate-700 transition">
+            Unmingle
+          </button>
+        ` : `
+          <button onclick="handleMingleToggle('${user.id}', false)" class="flex-1 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs font-bold shadow hover:from-amber-400 transition">
+            [ Mingle ]
+          </button>
+        `}
+        <button onclick="openChatWithUser('${user.id}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">
+          Message
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// 9. THREADS & ACTIVE CHAT LOGIC
+function refreshThreads() {
+  state.socket.emit('dm:threads', (res) => {
+    if (res?.success) {
+      state.threads = res.threads;
+      renderSidebarThreads(res.threads);
+      let totalUnread = 0;
+      res.threads.forEach(t => totalUnread += t.unreadCount);
+      state.unreadTotal = totalUnread;
+      if (totalUnread > 0) {
+        DOM.navChatsBadge.textContent = totalUnread;
+        DOM.navChatsBadge.classList.remove('hidden');
+      } else {
+        DOM.navChatsBadge.classList.add('hidden');
+      }
+    }
+  });
+}
+
+function renderSidebarThreads(threads) {
+  DOM.sidebarThreadsContainer.innerHTML = '';
+  if (!threads || threads.length === 0) {
+    DOM.sidebarThreadsContainer.innerHTML = `<p class="text-[11px] text-slate-500 px-2 py-2">No active chats yet.</p>`;
+    return;
+  }
+
+  threads.forEach(t => {
+    const user = t.partner;
+    const isActive = state.activeSection === 'chats' && state.activeChatPartner?.id === user.id;
     const item = document.createElement('div');
-    item.className = `p-2.5 rounded-xl flex items-center gap-3 cursor-pointer transition select-none ${
-      isActive 
-        ? 'bg-cyan-500/15 text-cyan-400 font-bold border border-cyan-500/30' 
-        : 'hover:bg-slate-900/60 text-slate-300'
+    item.className = `p-2 rounded-xl flex items-center gap-2.5 cursor-pointer transition select-none ${
+      isActive ? 'bg-amber-500/15 border border-amber-500/30' : 'hover:bg-slate-900/70 text-slate-300'
     }`;
 
     item.innerHTML = `
       <div class="relative shrink-0">
         <img src="${user.avatar}" class="w-8 h-8 rounded-full bg-slate-800 object-cover border border-slate-700">
-        <span class="status-indicator ${statusClass} bottom-0 right-0"></span>
+        <span class="status-indicator ${user.isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0"></span>
       </div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-bold truncate text-slate-200">${escapeHtml(user.nickname)}</p>
-          ${unread > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold animate-pulse">${unread}</span>` : ''}
+          <p class="text-xs font-bold text-white truncate">${escapeHtml(user.displayName)}</p>
+          <span class="text-[9px] text-slate-500">${formatTime(t.lastMessage.timestamp)}</span>
         </div>
-        <p class="text-[11px] text-slate-400 truncate">${escapeHtml(user.bio || 'Online on MingleMonkey🐒')}</p>
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] text-slate-400 truncate max-w-[130px]">${escapeHtml(t.lastMessage.content || 'Attachment')}</p>
+          ${t.unreadCount > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold">${t.unreadCount}</span>` : ''}
+        </div>
       </div>
     `;
 
-    item.onclick = () => openDirectMessage(user);
-    DOM.onlineUsersListContainer.appendChild(item);
+    item.onclick = () => openChatWithUser(user.id);
+    DOM.sidebarThreadsContainer.appendChild(item);
   });
-
-  lucide.createIcons();
 }
 
-function updateGlobalDmBadge() {
-  let total = 0;
-  state.unreadDMs.forEach(c => total += c);
-  if (total > 0) {
-    DOM.globalDmBadge.classList.remove('hidden');
+function openChatWithUser(userId) {
+  state.socket.emit('dm:open', userId, (res) => {
+    if (res?.success) {
+      state.activeChatPartner = res.recipient;
+      switchSection('chats');
+      updateChatHeaderPresence(res.recipient);
+
+      DOM.chatMessagesStream.innerHTML = '';
+      if (res.history && res.history.length > 0) {
+        res.history.forEach(m => appendChatMessage(m, DOM.chatMessagesStream, false));
+        scrollToBottom(DOM.chatMessagesStream);
+      } else {
+        renderEmptyChat(res.recipient);
+      }
+      refreshThreads();
+    } else {
+      showToast(res?.error || 'Could not open chat', 'error');
+    }
+  });
+}
+
+function updateChatHeaderPresence(user) {
+  DOM.chatPartnerAvatar.src = user.avatar;
+  DOM.chatPartnerDisplayName.textContent = user.displayName;
+  DOM.chatPartnerUsername.textContent = `@${user.username}`;
+  
+  DOM.chatPartnerStatusDot.className = `status-indicator ${user.isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0`;
+  DOM.chatPartnerBio.textContent = user.isOnline ? '● Online • Available to chat' : `○ Last seen ${formatLastSeen(user.lastSeen)}`;
+
+  if (user.isMingled) {
+    DOM.chatMingleStateBadge.textContent = '✓ Mingled';
+    DOM.chatMingleStateBadge.className = 'text-[10px] px-2 py-0.2 rounded-full font-semibold border bg-amber-950/60 text-amber-400 border-amber-500/30';
+    DOM.chatToggleMingleBtn.textContent = 'Unmingle';
+    DOM.chatToggleMingleBtn.className = 'px-3 py-1 rounded-xl text-xs font-bold transition border border-slate-700 hover:border-rose-500 hover:text-rose-400 text-slate-300';
   } else {
-    DOM.globalDmBadge.classList.add('hidden');
+    DOM.chatMingleStateBadge.textContent = 'Not Mingled';
+    DOM.chatMingleStateBadge.className = 'text-[10px] px-2 py-0.2 rounded-full font-semibold border bg-slate-900 text-slate-400 border-slate-800';
+    DOM.chatToggleMingleBtn.textContent = '+ Mingle';
+    DOM.chatToggleMingleBtn.className = 'px-3 py-1 rounded-xl text-xs font-bold transition bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow';
   }
 }
 
-// 9. CONVERSATION SWITCHING
-function switchToChannel(channelId) {
-  state.activeNavTab = 'channels';
-  state.currentChannel = channelId;
-  state.activeDmPartner = null;
+function renderEmptyChat(user) {
+  DOM.chatMessagesStream.innerHTML = `
+    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center h-full min-h-[250px]">
+      <img src="${user.avatar}" class="w-16 h-16 rounded-3xl bg-slate-800 border-2 border-amber-500/40 object-cover shadow-xl mb-3">
+      <h3 class="text-sm font-bold text-white">${escapeHtml(user.displayName)} (@${user.username})</h3>
+      <p class="text-xs text-slate-400 mt-1 max-w-xs">Start the conversation! Send a message to chat in real-time.</p>
+    </div>
+  `;
+}
 
-  DOM.standardChatPane.classList.remove('hidden');
-  DOM.strangerChatPane.classList.add('hidden');
+// 10. MINGLE / UNMINGLE ACTIONS
+function handleMingleToggle(targetUserId, isCurrentlyMingled) {
+  if (isCurrentlyMingled) {
+    state.socket.emit('user:unmingle', targetUserId, (res) => {
+      if (res?.success) {
+        showToast('Unmingled successfully', 'info');
+        loadHomeData();
+        if (state.activeSection === 'mingled') loadMingledNetwork();
+        if (state.activeSection === 'online') loadOnlinePeople();
+        if (state.activeChatPartner?.id === targetUserId) {
+          state.activeChatPartner.isMingled = false;
+          updateChatHeaderPresence(state.activeChatPartner);
+        }
+      }
+    });
+  } else {
+    state.socket.emit('user:mingle', targetUserId, (res) => {
+      if (res?.success) {
+        sounds.playMingleConnect();
+        showToast('🎉 Mingled successfully!', 'success');
+        loadHomeData();
+        if (state.activeSection === 'mingled') loadMingledNetwork();
+        if (state.activeSection === 'online') loadOnlinePeople();
+        if (state.activeChatPartner?.id === targetUserId) {
+          state.activeChatPartner.isMingled = true;
+          updateChatHeaderPresence(state.activeChatPartner);
+        }
+      }
+    });
+  }
+}
 
-  const channel = state.channels.find(c => c.id === channelId) || state.channels[0];
-  
-  DOM.headerChannelIcon.setAttribute('data-lucide', channel.icon || 'hash');
-  DOM.currentChatTitle.textContent = `#${channel.name}`;
-  DOM.currentChatTypeBadge.textContent = 'Channel';
-  DOM.currentChatTypeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/20';
-  DOM.currentChatTopic.textContent = channel.topic;
-  DOM.memberCountNumber.textContent = `${channel.memberCount || 1} members`;
-  DOM.chatMessageInput.placeholder = `Message #${channel.name}... (Enter to send)`;
-
-  DOM.chatMessagesFeed.innerHTML = '';
-  DOM.liveTypingStrip.classList.add('opacity-0');
-
-  // Update Right Details Panel
-  updateRightDetailsForChannel(channel);
-
-  state.socket.emit('channel:join', channelId, (res) => {
+// 11. SEARCH & DISCOVERY
+function executeSearch(query) {
+  state.socket.emit('user:search', query, (res) => {
     if (res?.success) {
-      if (res.channel) {
-        channel.memberCount = res.channel.memberCount;
-        DOM.memberCountNumber.textContent = `${res.channel.memberCount} members`;
-      }
-      if (res.history && res.history.length > 0) {
-        res.history.forEach(m => appendChatMessage(m, DOM.chatMessagesFeed, false));
-        scrollToBottom(DOM.chatMessagesFeed);
-      } else {
-        renderEmptyState(`Welcome to #${channel.name}`, 'Be the first to start the conversation!');
-      }
+      renderUserCardsGrid(res.results, DOM.discoverResultsContainer, `No users found matching "${query}"`);
     }
   });
-
-  updateNavTabButtons();
-  renderChannelsList();
-  lucide.createIcons();
 }
 
-function openDirectMessage(user) {
-  state.activeNavTab = 'dms';
-  state.activeDmPartner = user;
-
-  // Clear unread count for this user
-  state.unreadDMs.delete(user.id);
-  updateGlobalDmBadge();
-
-  DOM.standardChatPane.classList.remove('hidden');
-  DOM.strangerChatPane.classList.add('hidden');
-
-  DOM.headerChannelIcon.setAttribute('data-lucide', 'user');
-  DOM.currentChatTitle.textContent = `@${user.nickname}`;
-  DOM.currentChatTypeBadge.textContent = 'Direct Message';
-  DOM.currentChatTypeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20';
-  DOM.currentChatTopic.textContent = user.bio || 'Direct 1-on-1 private chat';
-  DOM.memberCountNumber.textContent = 'Direct 1-on-1';
-  DOM.chatMessageInput.placeholder = `Message @${user.nickname}... (Enter to send)`;
-
-  DOM.chatMessagesFeed.innerHTML = '';
-  DOM.liveTypingStrip.classList.add('opacity-0');
-
-  // Update Right Details Panel
-  updateRightDetailsForUser(user);
-
-  state.socket.emit('dm:open', user.id, (res) => {
-    if (res?.success) {
-      if (res.history && res.history.length > 0) {
-        res.history.forEach(m => appendChatMessage(m, DOM.chatMessagesFeed, false));
-        scrollToBottom(DOM.chatMessagesFeed);
-      } else {
-        renderEmptyState(`Start chatting with ${user.nickname}`, 'Send a private message to connect in real-time.');
-      }
-    }
-  });
-
-  // Emit read event
-  state.socket.emit('dm:read', { senderId: user.id });
-
-  updateNavTabButtons();
-  renderOnlineUsersList();
-  lucide.createIcons();
-}
-
-function startStrangerMatchmaking() {
-  state.activeNavTab = 'stranger';
-  state.activeDmPartner = null;
-
-  DOM.standardChatPane.classList.add('hidden');
-  DOM.strangerChatPane.classList.remove('hidden');
-
-  updateNavTabButtons();
-  state.socket.emit('match:find');
-}
-
-function updateNavTabButtons() {
-  DOM.tabChannels.classList.toggle('active', state.activeNavTab === 'channels');
-  DOM.tabDms.classList.toggle('active', state.activeNavTab === 'dms');
-  DOM.tabConnect.classList.toggle('active', state.activeNavTab === 'stranger');
-}
-
-// 10. MESSAGE RENDERING & ACTIONS
-function appendChatMessage(msg, container, autoScroll = true) {
-  // Remove empty state if present
-  const emptyState = container.querySelector('.empty-state-card');
-  if (emptyState) emptyState.remove();
-
-  if (msg.type === 'system') {
-    appendSystemMessage(msg.content, container);
+function executeTopSearch(query) {
+  if (!query || query.trim().length === 0) {
+    DOM.topSearchDropdown.classList.add('hidden');
     return;
   }
 
+  state.socket.emit('user:search', query, (res) => {
+    if (res?.success) {
+      renderTopSearchDropdown(res.results);
+    }
+  });
+}
+
+function renderTopSearchDropdown(results) {
+  DOM.topSearchDropdown.innerHTML = '';
+  if (!results || results.length === 0) {
+    DOM.topSearchDropdown.innerHTML = `<p class="p-3 text-xs text-slate-500 text-center">No people found</p>`;
+    DOM.topSearchDropdown.classList.remove('hidden');
+    return;
+  }
+
+  results.forEach(user => {
+    const item = document.createElement('div');
+    item.className = 'p-2.5 rounded-xl hover:bg-slate-800 flex items-center justify-between cursor-pointer transition select-none';
+    item.innerHTML = `
+      <div class="flex items-center gap-2.5 min-w-0" onclick="openProfileDrawer('${user.id}')">
+        <img src="${user.avatar}" class="w-8 h-8 rounded-full bg-slate-800 object-cover border border-slate-700">
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">${escapeHtml(user.displayName)}</p>
+          <p class="text-[10px] text-amber-400/80 font-mono truncate">@${user.username}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="handleMingleToggle('${user.id}', ${user.isMingled}); event.stopPropagation();" class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${user.isMingled ? 'bg-slate-700 text-slate-300' : 'bg-amber-500 text-slate-950'}">
+          ${user.isMingled ? 'Mingled' : 'Mingle'}
+        </button>
+        <button onclick="openChatWithUser('${user.id}'); event.stopPropagation();" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-700 text-white">
+          Chat
+        </button>
+      </div>
+    `;
+    DOM.topSearchDropdown.appendChild(item);
+  });
+  DOM.topSearchDropdown.classList.remove('hidden');
+}
+
+// 12. MESSAGE RENDERING
+function appendChatMessage(msg, container, autoScroll = true) {
   const isMe = msg.senderId === state.currentUser?.id;
-  const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeStr = formatTime(msg.timestamp);
 
   const wrapper = document.createElement('div');
-  wrapper.className = `flex gap-3 message-enter group relative ${isMe ? 'justify-end' : 'justify-start'}`;
+  wrapper.className = `flex gap-2.5 message-enter group relative ${isMe ? 'justify-end' : 'justify-start'}`;
   wrapper.id = `msg_${msg.id}`;
 
   let attachmentHtml = '';
@@ -692,14 +868,10 @@ function appendChatMessage(msg, container, autoScroll = true) {
           <img src="${msg.attachment.data}" class="w-full object-cover max-h-56 rounded-xl hover:scale-105 transition duration-200">
         </div>
       `;
-      // Track shared media for details panel
-      trackSharedMedia(msg.attachment.data);
     } else {
       attachmentHtml = `
-        <a href="${msg.attachment.data}" download="${msg.attachment.name || 'document'}" class="mt-2 flex items-center gap-3 p-3 bg-slate-900/80 border border-slate-700/80 rounded-xl hover:border-cyan-500/50 transition">
-          <div class="w-9 h-9 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
-            <i data-lucide="file-text" class="w-5 h-5"></i>
-          </div>
+        <a href="${msg.attachment.data}" download="${msg.attachment.name || 'document'}" class="mt-2 flex items-center gap-2.5 p-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl hover:border-amber-500/50 transition">
+          <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
           <div class="min-w-0">
             <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(msg.attachment.name || 'document')}</p>
             <p class="text-[10px] text-slate-400">${formatFileSize(msg.attachment.size)} • Click to download</p>
@@ -709,14 +881,14 @@ function appendChatMessage(msg, container, autoScroll = true) {
     }
   }
 
-  // Reactions HTML
+  // Reactions
   let reactionsHtml = `<div class="flex flex-wrap gap-1 mt-1 reactions-wrapper" id="reactions_${msg.id}">`;
   if (msg.reactions) {
     for (const [emoji, users] of Object.entries(msg.reactions)) {
       if (users.length > 0) {
-        const isReactedByMe = users.includes(state.currentUser?.nickname);
+        const isReactedByMe = users.includes(state.currentUser?.username);
         reactionsHtml += `
-          <button class="reaction-pill ${isReactedByMe ? 'active' : ''}" onclick="handleReactionClick('${msg.id}', '${emoji}')">
+          <button class="reaction-pill ${isReactedByMe ? 'active' : ''}" onclick="toggleReaction('${msg.id}', '${emoji}')">
             <span>${emoji}</span>
             <span>${users.length}</span>
           </button>
@@ -726,65 +898,39 @@ function appendChatMessage(msg, container, autoScroll = true) {
   }
   reactionsHtml += '</div>';
 
-  // Read status indicator for DMs
-  const readStatusHtml = isMe && msg.receiverId ? `
-    <span class="dm-read-status text-[10px] ${msg.read ? 'text-cyan-400 font-semibold' : 'text-slate-500'}">
-      ${msg.read ? '✓✓ Read' : '✓ Sent'}
-    </span>
-  ` : '';
-
   if (isMe) {
     wrapper.innerHTML = `
-      <!-- Action Hover Menu -->
-      <div class="absolute -top-3.5 right-12 hidden group-hover:flex items-center bg-slate-900 border border-slate-700 rounded-full px-2 py-0.5 shadow-xl gap-1.5 z-10 select-none">
-        <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Heart" onclick="handleReactionClick('${msg.id}', '❤️')">❤️</span>
-        <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Thumbs Up" onclick="handleReactionClick('${msg.id}', '👍')">👍</span>
-        <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Fire" onclick="handleReactionClick('${msg.id}', '🔥')">🔥</span>
-        <button class="text-slate-400 hover:text-cyan-400 p-0.5 text-xs" title="Copy Text" onclick="copyMessageText('${escapeJsString(msg.content)}')">
-          <i data-lucide="copy" class="w-3 h-3"></i>
-        </button>
-        <button class="text-slate-400 hover:text-rose-400 p-0.5 text-xs" title="Delete Message" onclick="deleteMessage('${msg.id}')">
-          <i data-lucide="trash-2" class="w-3 h-3"></i>
-        </button>
-      </div>
-
       <div class="flex flex-col items-end max-w-md lg:max-w-xl">
         <div class="flex items-center gap-1.5 mb-1">
-          ${readStatusHtml}
-          <span class="text-[10px] text-slate-500">${timeStr}</span>
-          <span class="text-xs font-bold text-cyan-400">You</span>
+          <span class="msg-read-status text-[9px] ${msg.read ? 'text-amber-400 font-semibold' : 'text-slate-500'}">
+            ${msg.read ? '✓✓ Read' : '✓ Sent'}
+          </span>
+          <span class="text-[9px] text-slate-500">${timeStr}</span>
         </div>
-        <div class="py-2.5 px-4 rounded-2xl rounded-tr-sm bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 text-white shadow-md text-sm leading-relaxed break-words border border-cyan-400/20">
+        <div class="py-2.5 px-4 rounded-2xl rounded-tr-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-medium shadow-md text-xs leading-relaxed break-words">
           ${escapeHtml(msg.content)}
           ${attachmentHtml}
         </div>
         ${reactionsHtml}
       </div>
-      <img src="${msg.senderAvatar || state.currentUser.avatar}" class="w-8 h-8 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-cyan-500/40">
+      <img src="${msg.senderAvatar || state.currentUser.avatar}" class="w-7 h-7 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-amber-500/40">
     `;
   } else {
     wrapper.innerHTML = `
-      <img src="${msg.senderAvatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + msg.senderId}" class="w-8 h-8 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-slate-700">
+      <img src="${msg.senderAvatar}" class="w-7 h-7 rounded-full bg-slate-800 object-cover shrink-0 mt-1 border border-slate-700">
       <div class="flex flex-col items-start max-w-md lg:max-w-xl">
         <div class="flex items-center gap-1.5 mb-1">
-          <span class="text-xs font-bold text-slate-200">${escapeHtml(msg.senderName || 'User')}</span>
-          <span class="text-[10px] text-slate-500">${timeStr}</span>
+          <span class="text-xs font-bold text-slate-200">${escapeHtml(msg.senderDisplayName || 'User')}</span>
+          <span class="text-[9px] text-slate-500">${timeStr}</span>
         </div>
-        <div class="py-2.5 px-4 rounded-2xl rounded-tl-sm bg-slate-900 text-slate-100 border border-slate-800 shadow-sm text-sm leading-relaxed break-words group relative">
+        <div class="py-2.5 px-4 rounded-2xl rounded-tl-sm bg-slate-900 text-slate-100 border border-slate-800 shadow-sm text-xs leading-relaxed break-words group relative">
           ${escapeHtml(msg.content)}
           ${attachmentHtml}
-
-          <!-- Action Hover Menu -->
-          <div class="absolute -top-3.5 right-2 hidden group-hover:flex items-center bg-slate-900 border border-slate-700 rounded-full px-2 py-0.5 shadow-xl gap-1.5 z-10 select-none">
-            <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Heart" onclick="handleReactionClick('${msg.id}', '❤️')">❤️</span>
-            <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Thumbs Up" onclick="handleReactionClick('${msg.id}', '👍')">👍</span>
-            <span class="cursor-pointer text-xs hover:scale-125 transition" title="React with Fire" onclick="handleReactionClick('${msg.id}', '🔥')">🔥</span>
-            <button class="text-slate-400 hover:text-cyan-400 p-0.5 text-xs" title="Reply" onclick="replyToMessage('${escapeJsString(msg.senderName)}', '${escapeJsString(msg.content)}')">
-              <i data-lucide="reply" class="w-3 h-3"></i>
-            </button>
-            <button class="text-slate-400 hover:text-cyan-400 p-0.5 text-xs" title="Copy Text" onclick="copyMessageText('${escapeJsString(msg.content)}')">
-              <i data-lucide="copy" class="w-3 h-3"></i>
-            </button>
+          <!-- Quick Reactions on Hover -->
+          <div class="absolute -top-3 right-2 hidden group-hover:flex items-center bg-slate-900 border border-slate-700 rounded-full px-1.5 py-0.5 shadow gap-1 z-10 select-none">
+            <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '❤️')">❤️</span>
+            <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '👍')">👍</span>
+            <span class="cursor-pointer text-xs hover:scale-125 transition" onclick="toggleReaction('${msg.id}', '🔥')">🔥</span>
           </div>
         </div>
         ${reactionsHtml}
@@ -801,358 +947,265 @@ function appendSystemMessage(text, container) {
   const div = document.createElement('div');
   div.className = 'flex justify-center my-2 message-enter';
   div.innerHTML = `
-    <div class="px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-400 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-      <i data-lucide="info" class="w-3.5 h-3.5 text-cyan-400"></i>
+    <div class="px-3.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-400 text-xs font-medium flex items-center gap-1.5 shadow-sm">
       <span>${escapeHtml(text)}</span>
     </div>
   `;
   container.appendChild(div);
-  lucide.createIcons();
   scrollToBottom(container);
 }
 
-function renderEmptyState(title, subtitle) {
-  DOM.chatMessagesFeed.innerHTML = `
-    <div class="empty-state-card flex-1 flex flex-col items-center justify-center p-8 text-center h-full min-h-[300px]">
-      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500/10 to-violet-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mb-4">
-        <i data-lucide="message-circle" class="w-7 h-7"></i>
-      </div>
-      <h3 class="text-sm font-bold text-white mb-1">${escapeHtml(title)}</h3>
-      <p class="text-xs text-slate-400 max-w-xs">${escapeHtml(subtitle)}</p>
-    </div>
-  `;
-  lucide.createIcons();
+function toggleReaction(messageId, emoji) {
+  state.socket.emit('message:reaction', { messageId, emoji });
 }
 
-function updateMessageReactionsInDOM(messageId, reactions) {
-  const container = document.getElementById(`reactions_${messageId}`);
-  if (!container) return;
+// 13. RIGHT PROFILE DRAWER
+function openProfileDrawer(userId) {
+  state.socket.emit('dm:open', userId, (res) => {
+    if (res?.success) {
+      const user = res.recipient;
+      DOM.drawerAvatar.src = user.avatar;
+      DOM.drawerDisplayName.textContent = user.displayName;
+      DOM.drawerUsername.textContent = `@${user.username}`;
+      DOM.drawerBio.textContent = user.bio || 'Happy to mingle!';
+      DOM.drawerMinglesCount.textContent = user.mingleCount || 0;
+      DOM.drawerMingleStatusText.textContent = user.mingleStatus ? user.mingleStatus.toUpperCase() : 'AVAILABLE';
+      DOM.drawerLastSeen.textContent = user.isOnline ? '● Online' : `○ Last seen ${formatLastSeen(user.lastSeen)}`;
+      DOM.drawerStatusDot.className = `status-indicator ${user.isOnline ? 'status-online' : 'status-offline'} bottom-0 right-0`;
 
-  container.innerHTML = '';
-  for (const [emoji, users] of Object.entries(reactions)) {
-    if (users.length > 0) {
-      const isReactedByMe = users.includes(state.currentUser?.nickname);
-      const pill = document.createElement('button');
-      pill.className = `reaction-pill ${isReactedByMe ? 'active' : ''}`;
-      pill.innerHTML = `<span>${emoji}</span><span>${users.length}</span>`;
-      pill.onclick = () => handleReactionClick(messageId, emoji);
-      container.appendChild(pill);
+      if (user.isMingled) {
+        DOM.drawerMingleBtn.textContent = 'Unmingle';
+        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700';
+      } else {
+        DOM.drawerMingleBtn.textContent = '+ Mingle';
+        DOM.drawerMingleBtn.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow';
+      }
+
+      DOM.drawerMingleBtn.onclick = () => handleMingleToggle(user.id, user.isMingled);
+      DOM.drawerMessageBtn.onclick = () => openChatWithUser(user.id);
+
+      DOM.rightProfileDrawer.classList.remove('hidden');
+      DOM.rightProfileDrawer.classList.add('xl:flex');
     }
-  }
-}
-
-function handleReactionClick(messageId, emoji) {
-  if (state.activeNavTab === 'channels') {
-    state.socket.emit('message:reaction', {
-      channelId: state.currentChannel,
-      messageId,
-      emoji
-    });
-  } else if (state.activeNavTab === 'dms' && state.activeDmPartner) {
-    state.socket.emit('message:reaction', {
-      recipientId: state.activeDmPartner.id,
-      messageId,
-      emoji
-    });
-  }
-}
-
-function deleteMessage(messageId) {
-  if (state.activeNavTab === 'channels') {
-    state.socket.emit('message:delete', {
-      channelId: state.currentChannel,
-      messageId
-    });
-  } else if (state.activeNavTab === 'dms' && state.activeDmPartner) {
-    state.socket.emit('message:delete', {
-      recipientId: state.activeDmPartner.id,
-      messageId
-    });
-  }
-}
-
-function replyToMessage(senderName, content) {
-  DOM.chatMessageInput.value = `> @${senderName}: ${content}\n` + DOM.chatMessageInput.value;
-  DOM.chatMessageInput.focus();
-}
-
-function copyMessageText(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Message copied to clipboard', 'success');
-  }).catch(() => {
-    showToast('Failed to copy', 'error');
   });
 }
 
-// 11. DETAILS PANEL UPDATES
-function updateRightDetailsForChannel(channel) {
-  DOM.detailsAvatar.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${channel.id}`;
-  DOM.detailsStatusDot.className = 'status-indicator status-online bottom-0 right-0';
-  DOM.detailsTitle.textContent = `#${channel.name}`;
-  DOM.detailsSubtitle.textContent = 'Community Public Room';
-  DOM.detailsAboutText.textContent = channel.topic;
-  clearSharedMediaList();
-}
-
-function updateRightDetailsForUser(user) {
-  DOM.detailsAvatar.src = user.avatar;
-  const statusClass = user.status === 'away' ? 'status-away' : (user.status === 'busy' ? 'status-busy' : 'status-online');
-  DOM.detailsStatusDot.className = `status-indicator ${statusClass} bottom-0 right-0`;
-  DOM.detailsTitle.textContent = `@${user.nickname}`;
-  DOM.detailsSubtitle.textContent = user.status ? user.status.toUpperCase() : 'ONLINE';
-  DOM.detailsAboutText.textContent = user.bio || 'Direct private connection';
-  clearSharedMediaList();
-}
-
-function clearSharedMediaList() {
-  state.sharedMedia = [];
-  DOM.detailsMediaCount.textContent = '0 items';
-  DOM.detailsMediaGrid.innerHTML = `<div class="col-span-3 text-center py-4 text-xs text-slate-500">No media shared yet</div>`;
-}
-
-function trackSharedMedia(url) {
-  if (!state.sharedMedia.includes(url)) {
-    state.sharedMedia.push(url);
-    DOM.detailsMediaCount.textContent = `${state.sharedMedia.length} items`;
-    
-    if (state.sharedMedia.length === 1) {
-      DOM.detailsMediaGrid.innerHTML = '';
-    }
-
-    const img = document.createElement('img');
-    img.src = url;
-    img.className = 'w-full h-16 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-80 transition';
-    img.onclick = () => openLightbox(url);
-    DOM.detailsMediaGrid.appendChild(img);
-  }
-}
-
-// 12. EVENT LISTENERS
+// 14. EVENT LISTENERS
 function setupEventListeners() {
-  // Profile Setup Form Submit
-  DOM.setupForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nickname = DOM.modalNicknameInput.value.trim();
-    const bio = DOM.modalBioInput.value.trim() || 'Ready to chat on MingleMonkey🐒!';
-    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
-
-    if (!nickname) {
-      DOM.setupErrorMsg.textContent = 'Please enter a nickname';
-      DOM.setupErrorMsg.classList.remove('hidden');
+  // Check Username Debounce
+  DOM.regUsernameInput.addEventListener('input', (e) => {
+    clearTimeout(state.usernameCheckTimer);
+    const val = e.target.value.trim().replace(/^@/, '');
+    if (!val) {
+      DOM.usernameFeedback.textContent = '';
+      DOM.usernameCheckIcon.classList.add('hidden');
       return;
     }
+    state.usernameCheckTimer = setTimeout(() => {
+      state.socket.emit('user:check_username', val, (res) => {
+        if (res.available) {
+          DOM.usernameFeedback.textContent = 'Username available ✓';
+          DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-emerald-400';
+          DOM.usernameCheckIcon.classList.remove('hidden');
+        } else {
+          DOM.usernameFeedback.textContent = res.error;
+          DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
+          DOM.usernameCheckIcon.classList.add('hidden');
+        }
+      });
+    }, 250);
+  });
 
-    state.socket.emit('user:join', { nickname, avatar, bio }, (res) => {
+  // Register Identity Form Submit
+  DOM.registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = DOM.regUsernameInput.value.trim().replace(/^@/, '');
+    const displayName = DOM.regDisplayNameInput.value.trim();
+    const bio = DOM.regBioInput.value.trim();
+    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
+
+    state.socket.emit('user:register', { username, displayName, avatar, bio }, (res) => {
       if (res?.success) {
-        state.currentUser = res.user;
-        DOM.headerUserAvatar.src = avatar;
-        DOM.headerUserName.textContent = nickname;
-        DOM.sidebarUserAvatar.src = avatar;
-        DOM.sidebarUsername.textContent = nickname;
-        DOM.sidebarUserBio.textContent = bio;
-
-        DOM.setupModal.classList.add('hidden');
-        showToast(`Welcome to MingleMonkey🐒, ${nickname}!`, 'success');
-
-        // Join default #general channel
-        switchToChannel('general');
+        setCurrentUser(res.user);
+        DOM.authModal.classList.add('hidden');
+        showToast(`🎉 Identity @${res.user.username} created!`, 'success');
       } else {
-        DOM.setupErrorMsg.textContent = res?.error || 'Failed to join';
-        DOM.setupErrorMsg.classList.remove('hidden');
+        DOM.usernameFeedback.textContent = res?.error || 'Registration failed';
+        DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
       }
     });
   });
 
-  DOM.modalRandomizeAvatars.addEventListener('click', randomizeAvatars);
-
-  // Nav Switchers
-  DOM.tabChannels.addEventListener('click', () => {
-    state.activeNavTab = 'channels';
-    switchToChannel('general');
+  // Login Form Submit
+  DOM.loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = DOM.loginUsernameInput.value.trim().replace(/^@/, '');
+    state.socket.emit('user:login', username, (res) => {
+      if (res?.success) {
+        setCurrentUser(res.user);
+        DOM.authModal.classList.add('hidden');
+        showToast(`Welcome back, ${res.user.displayName}!`, 'success');
+      } else {
+        DOM.loginErrorMsg.textContent = res?.error || 'Username not found';
+        DOM.loginErrorMsg.classList.remove('hidden');
+      }
+    });
   });
 
-  DOM.tabDms.addEventListener('click', () => {
-    state.activeNavTab = 'dms';
-    updateNavTabButtons();
-    if (state.onlineUsers.length > 1) {
-      const firstOther = state.onlineUsers.find(u => u.id !== state.currentUser?.id);
-      if (firstOther) openDirectMessage(firstOther);
+  DOM.authTabRegister.addEventListener('click', () => {
+    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 shadow';
+    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
+    DOM.registerForm.classList.remove('hidden');
+    DOM.loginForm.classList.add('hidden');
+  });
+
+  DOM.authTabLogin.addEventListener('click', () => {
+    DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 shadow';
+    DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
+    DOM.loginForm.classList.remove('hidden');
+    DOM.registerForm.classList.add('hidden');
+  });
+
+  DOM.randomizeAvatarsBtn.addEventListener('click', randomizeAvatars);
+
+  // Top Search Input
+  DOM.topSearchInput.addEventListener('input', (e) => {
+    clearTimeout(state.topSearchTimer);
+    const q = e.target.value.trim();
+    state.topSearchTimer = setTimeout(() => executeTopSearch(q), 200);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!DOM.topSearchDropdown.contains(e.target) && e.target !== DOM.topSearchInput) {
+      DOM.topSearchDropdown.classList.add('hidden');
     }
   });
 
-  DOM.tabConnect.addEventListener('click', startStrangerMatchmaking);
-  DOM.quickConnectBanner.addEventListener('click', startStrangerMatchmaking);
+  // Nav Hub Buttons
+  DOM.navBtnHome.addEventListener('click', () => switchSection('home'));
+  DOM.navBtnChats.addEventListener('click', () => switchSection('chats'));
+  DOM.navBtnDiscover.addEventListener('click', () => switchSection('discover'));
+  DOM.navBtnOnline.addEventListener('click', () => switchSection('online'));
+  DOM.navBtnMingled.addEventListener('click', () => switchSection('mingled'));
+  DOM.quickSurpriseBanner.addEventListener('click', () => switchSection('surprise'));
 
-  // Sidebar Filter Input
-  DOM.sidebarFilterInput.addEventListener('input', () => {
-    renderChannelsList();
-    renderOnlineUsersList();
+  DOM.brandLogoHome.addEventListener('click', () => switchSection('home'));
+  DOM.homeViewAllMingledBtn.addEventListener('click', () => switchSection('mingled'));
+  DOM.homeDiscoverBtn.addEventListener('click', () => switchSection('discover'));
+  DOM.homeSurpriseBtn.addEventListener('click', () => switchSection('surprise'));
+
+  DOM.discoverSearchInput.addEventListener('input', (e) => {
+    executeSearch(e.target.value);
   });
 
-  // Global In-Chat Search
-  DOM.globalSearchInput.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    document.querySelectorAll('.message-enter').forEach(msgEl => {
-      if (!q) {
-        msgEl.style.display = 'flex';
-        msgEl.classList.remove('ring-2', 'ring-cyan-400/50');
-      } else if (msgEl.textContent.toLowerCase().includes(q)) {
-        msgEl.style.display = 'flex';
-        msgEl.classList.add('ring-2', 'ring-cyan-400/50');
-      } else {
-        msgEl.style.display = 'none';
-      }
-    });
-  });
+  DOM.refreshOnlineBtn.addEventListener('click', loadOnlinePeople);
 
-  // User Status Selector
-  DOM.sidebarStatusSelect.addEventListener('change', (e) => {
-    const status = e.target.value;
-    const statusClass = status === 'away' ? 'status-away' : (status === 'busy' ? 'status-busy' : 'status-online');
-    DOM.sidebarStatusDot.className = `status-indicator ${statusClass} bottom-0 right-0`;
-    state.socket.emit('user:status', status);
-  });
-
-  // Sound Toggle
-  DOM.soundBtn.addEventListener('click', () => {
-    soundManager.enabled = !soundManager.enabled;
-    localStorage.setItem('nexa_sound', soundManager.enabled);
-    setupSoundButtonUI();
-    showToast(soundManager.enabled ? 'Sound notifications ON' : 'Sound notifications MUTED', 'info');
-  });
-
-  // Theme Toggle
-  DOM.themeBtn.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('nexa_theme', isDark ? 'dark' : 'light');
-    setupThemeState();
-  });
-
-  // Details Panel Toggle
-  DOM.toggleDetailsBtn.addEventListener('click', () => {
-    DOM.rightDetailsPanel.classList.toggle('hidden');
-    DOM.rightDetailsPanel.classList.toggle('xl:flex');
-  });
-
-  DOM.closeDetailsPanelBtn.addEventListener('click', () => {
-    DOM.rightDetailsPanel.classList.add('hidden');
-    DOM.rightDetailsPanel.classList.remove('xl:flex');
-  });
-
-  // Mobile Drawer Toggle
-  DOM.mobileSidebarToggle.addEventListener('click', () => {
-    DOM.mainSidebar.classList.toggle('-translate-x-full');
-  });
-
-  // Form Submit (Standard Chat)
-  DOM.mainChatForm.addEventListener('submit', (e) => {
+  // Active Chat Message Submit
+  DOM.activeChatForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const text = DOM.chatMessageInput.value.trim();
+    if (!state.activeChatPartner) return;
+    const text = DOM.chatTextInput.value.trim();
     const attachment = state.attachedFile;
 
     if (!text && !attachment) return;
 
-    if (state.activeNavTab === 'channels') {
-      state.socket.emit('channel:message', {
-        channelId: state.currentChannel,
-        content: text,
-        attachment
-      });
-    } else if (state.activeNavTab === 'dms' && state.activeDmPartner) {
-      state.socket.emit('dm:message', {
-        recipientId: state.activeDmPartner.id,
-        content: text,
-        attachment
-      });
-    }
+    state.socket.emit('dm:message', {
+      recipientId: state.activeChatPartner.id,
+      content: text,
+      attachment
+    });
 
-    soundManager.playSend();
-
-    DOM.chatMessageInput.value = '';
-    clearFileAttachment();
-    DOM.emojiPickerDrawer.classList.add('hidden');
-    emitTypingSignal(false);
+    sounds.playSend();
+    DOM.chatTextInput.value = '';
+    clearAttachment();
+    DOM.chatEmojiDrawer.classList.add('hidden');
+    state.socket.emit('dm:typing', { recipientId: state.activeChatPartner.id, isTyping: false });
   });
 
-  // Form Submit (Stranger Chat)
-  DOM.strangerChatForm.addEventListener('submit', (e) => {
+  // Surprise Chat Submit
+  DOM.surpriseChatForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const text = DOM.strangerMessageInput.value.trim();
+    const text = DOM.surpriseTextInput.value.trim();
     if (!text) return;
 
-    state.socket.emit('match:message', { content: text });
-    soundManager.playSend();
-    DOM.strangerMessageInput.value = '';
-    state.socket.emit('match:typing', { isTyping: false });
+    state.socket.emit('surprise:message', { content: text });
+    sounds.playSend();
+    DOM.surpriseTextInput.value = '';
+    state.socket.emit('surprise:typing', { isTyping: false });
   });
 
-  // Stranger Controls
-  DOM.strangerNextPersonBtn.addEventListener('click', () => {
-    state.socket.emit('match:next');
+  DOM.surpriseMingleNowBtn.addEventListener('click', () => {
+    state.socket.emit('surprise:mingle_now', (res) => {
+      if (res?.success) {
+        sounds.playMingleConnect();
+        showToast('🎉 You mingled with your surprise partner!', 'success');
+        DOM.surpriseMingleNowBtn.textContent = '✓ MINGLED!';
+        DOM.surpriseMingleNowBtn.classList.add('bg-emerald-600');
+        loadHomeData();
+      }
+    });
   });
 
-  DOM.strangerExitBtn.addEventListener('click', () => {
-    state.socket.emit('match:leave');
-    switchToChannel('general');
+  DOM.surpriseNextBtn.addEventListener('click', () => {
+    state.socket.emit('surprise:next');
   });
 
-  DOM.cancelSearchingStrangerBtn.addEventListener('click', () => {
-    state.socket.emit('match:leave');
-    switchToChannel('general');
+  DOM.surpriseExitBtn.addEventListener('click', () => {
+    state.socket.emit('surprise:leave');
+    switchSection('home');
   });
 
-  // Clear Chat History View
-  DOM.clearChatHistoryBtn.addEventListener('click', () => {
-    DOM.chatMessagesFeed.innerHTML = '';
-    renderEmptyState('View cleared', 'New incoming messages will appear here.');
+  DOM.cancelSurpriseSearchBtn.addEventListener('click', () => {
+    state.socket.emit('surprise:leave');
+    switchSection('home');
   });
 
-  // Typing state for chat input
-  DOM.chatMessageInput.addEventListener('input', () => {
-    emitTypingSignal(true);
+  // Chat typing
+  DOM.chatTextInput.addEventListener('input', () => {
+    if (!state.activeChatPartner) return;
+    state.socket.emit('dm:typing', { recipientId: state.activeChatPartner.id, isTyping: true });
     clearTimeout(state.typingTimer);
     state.typingTimer = setTimeout(() => {
-      emitTypingSignal(false);
+      state.socket.emit('dm:typing', { recipientId: state.activeChatPartner.id, isTyping: false });
     }, 1500);
   });
 
-  // Typing state for stranger input
-  DOM.strangerMessageInput.addEventListener('input', () => {
-    state.socket.emit('match:typing', { isTyping: true });
-    clearTimeout(state.typingTimer);
-    state.typingTimer = setTimeout(() => {
-      state.socket.emit('match:typing', { isTyping: false });
-    }, 1500);
+  // Mingle toggle in chat header
+  DOM.chatToggleMingleBtn.addEventListener('click', () => {
+    if (!state.activeChatPartner) return;
+    handleMingleToggle(state.activeChatPartner.id, state.activeChatPartner.isMingled);
   });
 
-  // Emoji Drawer Toggle
-  DOM.toggleEmojiBtn.addEventListener('click', (e) => {
+  DOM.chatProfileToggleBtn.addEventListener('click', () => {
+    if (state.activeChatPartner) openProfileDrawer(state.activeChatPartner.id);
+  });
+
+  DOM.clearChatViewBtn.addEventListener('click', () => {
+    DOM.chatMessagesStream.innerHTML = '';
+  });
+
+  // Emoji Drawer
+  DOM.chatEmojiToggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    DOM.emojiPickerDrawer.classList.toggle('hidden');
+    DOM.chatEmojiDrawer.classList.toggle('hidden');
   });
 
-  document.addEventListener('click', (e) => {
-    if (!DOM.emojiPickerDrawer.contains(e.target) && e.target !== DOM.toggleEmojiBtn) {
-      DOM.emojiPickerDrawer.classList.add('hidden');
-    }
-  });
-
-  DOM.emojiGridButtons.addEventListener('click', (e) => {
+  DOM.chatEmojiGrid.addEventListener('click', (e) => {
     if (e.target.classList.contains('emoji-btn')) {
-      DOM.chatMessageInput.value += e.target.textContent;
-      DOM.chatMessageInput.focus();
+      DOM.chatTextInput.value += e.target.textContent;
+      DOM.chatTextInput.focus();
     }
   });
 
-  // File Upload Handlers
-  DOM.attachFileBtn.addEventListener('click', () => DOM.fileAttachmentInput.click());
+  // File Upload
+  DOM.chatAttachBtn.addEventListener('click', () => DOM.chatFileInput.click());
 
-  DOM.fileAttachmentInput.addEventListener('change', (e) => {
+  DOM.chatFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast('File exceeds 5MB maximum limit', 'error');
+      showToast('File exceeds 5MB limit', 'error');
       return;
     }
 
@@ -1165,53 +1218,110 @@ function setupEventListeners() {
         data: ev.target.result
       };
 
-      DOM.previewFileName.textContent = file.name;
-      DOM.previewFileSize.textContent = formatFileSize(file.size);
+      DOM.attachmentNameText.textContent = file.name;
+      DOM.attachmentSizeText.textContent = formatFileSize(file.size);
 
       if (file.type.startsWith('image/')) {
-        DOM.previewImageElement.src = ev.target.result;
-        DOM.previewImageElement.classList.remove('hidden');
-        DOM.previewDocIcon.classList.add('hidden');
+        DOM.attachmentImagePreview.src = ev.target.result;
+        DOM.attachmentImagePreview.classList.remove('hidden');
+        DOM.attachmentDocIcon.classList.add('hidden');
       } else {
-        DOM.previewImageElement.classList.add('hidden');
-        DOM.previewDocIcon.classList.remove('hidden');
+        DOM.attachmentImagePreview.classList.add('hidden');
+        DOM.attachmentDocIcon.classList.remove('hidden');
       }
 
-      DOM.inputAttachmentBar.classList.remove('hidden');
+      DOM.chatAttachmentPreviewBar.classList.remove('hidden');
     };
     reader.readAsDataURL(file);
   });
 
-  DOM.cancelAttachmentBtn.addEventListener('click', clearFileAttachment);
+  DOM.cancelChatAttachmentBtn.addEventListener('click', clearAttachment);
 
-  // Lightbox Close
+  // Status Picker in Header
+  DOM.userMingleStatusSelect.addEventListener('change', (e) => {
+    const mingleStatus = e.target.value;
+    state.socket.emit('user:update_status', { mingleStatus });
+  });
+
+  // Profile Settings Modal
+  DOM.headerUserChip.addEventListener('click', openSettingsModal);
+  DOM.footerProfileBtn.addEventListener('click', openSettingsModal);
+  DOM.profileSettingsBtn.addEventListener('click', openSettingsModal);
+  DOM.closeSettingsModalBtn.addEventListener('click', () => DOM.profileSettingsModal.classList.add('hidden'));
+
+  DOM.updateProfileForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const displayName = DOM.settingsDisplayNameInput.value.trim();
+    const bio = DOM.settingsBioInput.value.trim();
+    const privacySettings = {
+      showOnlineStatus: DOM.settingShowOnlineStatus.checked,
+      allowSurpriseMingle: DOM.settingAllowSurpriseMingle.checked,
+      allowMessagesFromNonMingles: DOM.settingAllowNonMingleMessages.checked
+    };
+
+    state.socket.emit('user:update_profile', { displayName, bio, privacySettings }, (res) => {
+      if (res?.success) {
+        setCurrentUser(res.user);
+        DOM.profileSettingsModal.classList.add('hidden');
+        showToast('Settings saved!', 'success');
+      }
+    });
+  });
+
+  DOM.switchAccountBtn.addEventListener('click', () => {
+    localStorage.removeItem('mingle_user');
+    DOM.profileSettingsModal.classList.add('hidden');
+    DOM.authModal.classList.remove('hidden');
+  });
+
+  DOM.closeRightDrawerBtn.addEventListener('click', () => {
+    DOM.rightProfileDrawer.classList.add('hidden');
+    DOM.rightProfileDrawer.classList.remove('xl:flex');
+  });
+
+  DOM.mobileMenuToggle.addEventListener('click', () => {
+    DOM.mainNavSidebar.classList.toggle('-translate-x-full');
+  });
+
+  // Sound Toggle
+  DOM.soundToggleBtn.addEventListener('click', () => {
+    sounds.enabled = !sounds.enabled;
+    localStorage.setItem('mingle_sound', sounds.enabled);
+    setupSoundUI();
+  });
+
+  // Theme Toggle
+  DOM.themeToggleBtn.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('mingle_theme', isDark ? 'dark' : 'light');
+    setupTheme();
+  });
+
   DOM.imageLightboxModal.addEventListener('click', () => {
     DOM.imageLightboxModal.classList.add('hidden');
     DOM.imageLightboxModal.classList.remove('flex');
   });
 }
 
-function clearFileAttachment() {
+function openSettingsModal() {
+  if (!state.currentUser) return;
+  DOM.settingsModalUsername.textContent = `@${state.currentUser.username}`;
+  DOM.settingsDisplayNameInput.value = state.currentUser.displayName;
+  DOM.settingsBioInput.value = state.currentUser.bio || '';
+  DOM.settingShowOnlineStatus.checked = state.currentUser.privacySettings?.showOnlineStatus !== false;
+  DOM.settingAllowSurpriseMingle.checked = state.currentUser.privacySettings?.allowSurpriseMingle !== false;
+  DOM.settingAllowNonMingleMessages.checked = state.currentUser.privacySettings?.allowMessagesFromNonMingles !== false;
+
+  DOM.profileSettingsModal.classList.remove('hidden');
+  DOM.profileSettingsModal.classList.add('flex');
+}
+
+function clearAttachment() {
   state.attachedFile = null;
-  DOM.fileAttachmentInput.value = '';
-  DOM.inputAttachmentBar.classList.add('hidden');
+  DOM.chatFileInput.value = '';
+  DOM.chatAttachmentPreviewBar.classList.add('hidden');
 }
 
-function emitTypingSignal(isTyping) {
-  if (state.activeNavTab === 'channels') {
-    state.socket.emit('channel:typing', {
-      channelId: state.currentChannel,
-      isTyping
-    });
-  } else if (state.activeNavTab === 'dms' && state.activeDmPartner) {
-    state.socket.emit('dm:typing', {
-      recipientId: state.activeDmPartner.id,
-      isTyping
-    });
-  }
-}
-
-// 13. UI HELPER UTILITIES
 function openLightbox(url) {
   DOM.lightboxImageElement.src = url;
   DOM.imageLightboxModal.classList.remove('hidden');
@@ -1222,10 +1332,25 @@ function scrollToBottom(el) {
   el.scrollTop = el.scrollHeight;
 }
 
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatLastSeen(ts) {
+  if (!ts) return 'recently';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 function formatFileSize(bytes) {
   if (!bytes) return '0 B';
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ['B', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
@@ -1240,28 +1365,22 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function escapeJsString(str) {
-  if (!str) return '';
-  return str.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
-}
-
-function setupSoundButtonUI() {
-  DOM.soundBtnIcon.setAttribute('data-lucide', soundManager.enabled ? 'volume-2' : 'volume-x');
-  DOM.soundBtn.classList.toggle('text-rose-400', !soundManager.enabled);
+function setupSoundUI() {
+  DOM.soundIcon.setAttribute('data-lucide', sounds.enabled ? 'volume-2' : 'volume-x');
+  DOM.soundToggleBtn.classList.toggle('text-rose-400', !sounds.enabled);
   lucide.createIcons();
 }
 
-function setupThemeState() {
-  const saved = localStorage.getItem('mingle_theme') || localStorage.getItem('nexa_theme') || 'dark';
+function setupTheme() {
+  const saved = localStorage.getItem('mingle_theme') || 'dark';
   if (saved === 'dark') {
     document.documentElement.classList.add('dark');
-    DOM.themeBtnIcon.setAttribute('data-lucide', 'sun');
+    DOM.themeIcon.setAttribute('data-lucide', 'sun');
   } else {
     document.documentElement.classList.remove('dark');
-    DOM.themeBtnIcon.setAttribute('data-lucide', 'moon');
+    DOM.themeIcon.setAttribute('data-lucide', 'moon');
   }
   lucide.createIcons();
 }
 
-// Initialize on DOM Ready
-window.addEventListener('DOMContentLoaded', initializeMingleMonkey);
+window.addEventListener('DOMContentLoaded', initApp);

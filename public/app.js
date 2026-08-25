@@ -123,6 +123,9 @@ const DOM = {
   toggleRegPasswordBtn: document.getElementById('toggleRegPasswordBtn'),
   regPasswordEyeIcon: document.getElementById('regPasswordEyeIcon'),
   regBioInput: document.getElementById('regBioInput'),
+  regErrorMsg: document.getElementById('regErrorMsg'),
+  createIdentityBtn: document.getElementById('createIdentityBtn'),
+  createIdBtnText: document.getElementById('createIdBtnText'),
   usernameCheckIcon: document.getElementById('usernameCheckIcon'),
   usernameFeedback: document.getElementById('usernameFeedback'),
   loginUsernameInput: document.getElementById('loginUsernameInput'),
@@ -1098,20 +1101,56 @@ function setupEventListeners() {
     const bio = DOM.regBioInput.value.trim();
     const avatar = state.customAvatarDataUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${state.selectedAvatarSeed}`;
 
-    if (!password || password.length < 4) {
-      DOM.usernameFeedback.textContent = 'Password must be at least 4 characters';
-      DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
+    if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
+
+    if (!username || username.length < 3) {
+      if (DOM.regErrorMsg) {
+        DOM.regErrorMsg.textContent = 'Please enter a username (at least 3 characters)';
+        DOM.regErrorMsg.classList.remove('hidden');
+      }
+      showToast('Username must be at least 3 characters', 'error');
       return;
     }
 
+    if (!password || password.length < 4) {
+      if (DOM.regErrorMsg) {
+        DOM.regErrorMsg.textContent = 'Password must be at least 4 characters';
+        DOM.regErrorMsg.classList.remove('hidden');
+      }
+      showToast('Password must be at least 4 characters', 'error');
+      return;
+    }
+
+    if (!state.socket || !state.socket.connected) {
+      if (DOM.regErrorMsg) {
+        DOM.regErrorMsg.textContent = 'Connecting to server... Please wait a moment.';
+        DOM.regErrorMsg.classList.remove('hidden');
+      }
+      showToast('Server connecting, please try in a moment', 'error');
+      return;
+    }
+
+    // Set Button Loading State
+    if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATING ID...';
+    if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = true;
+
     state.socket.emit('user:register', { username, displayName, password, avatar, bio }, (res) => {
+      if (DOM.createIdBtnText) DOM.createIdBtnText.textContent = 'CREATE ID';
+      if (DOM.createIdentityBtn) DOM.createIdentityBtn.disabled = false;
+
       if (res?.success) {
         setCurrentUser(res.user);
         DOM.authModal.classList.add('hidden');
         showToast(`🎉 Identity @${res.user.username} created!`, 'success');
       } else {
-        DOM.usernameFeedback.textContent = res?.error || 'Registration failed';
-        DOM.usernameFeedback.className = 'text-[11px] mt-1 font-semibold text-rose-400';
+        const errMsg = res?.error || 'Registration failed';
+        if (DOM.regErrorMsg) {
+          DOM.regErrorMsg.innerHTML = `<span>❌ ${escapeHtml(errMsg)}</span>${errMsg.includes('already taken') ? `<div class="mt-1 text-[11px] text-amber-300 font-bold cursor-pointer underline" onclick="DOM.authTabLogin.click()">Already have this account? Sign In →</div>` : ''}`;
+          DOM.regErrorMsg.classList.remove('hidden');
+        }
+        DOM.usernameFeedback.textContent = errMsg;
+        DOM.usernameFeedback.className = 'text-[10px] mt-0.5 font-semibold text-rose-400';
+        showToast(errMsg, 'error');
       }
     });
   });
@@ -1124,14 +1163,28 @@ function setupEventListeners() {
 
     DOM.loginErrorMsg.classList.add('hidden');
 
+    if (!username) {
+      DOM.loginErrorMsg.textContent = 'Please enter your username';
+      DOM.loginErrorMsg.classList.remove('hidden');
+      return;
+    }
+
+    if (!state.socket || !state.socket.connected) {
+      DOM.loginErrorMsg.textContent = 'Connecting to server... Please wait a moment.';
+      DOM.loginErrorMsg.classList.remove('hidden');
+      return;
+    }
+
     state.socket.emit('user:login', { username, password }, (res) => {
       if (res?.success) {
         setCurrentUser(res.user);
         DOM.authModal.classList.add('hidden');
         showToast(`Welcome back, ${res.user.displayName}!`, 'success');
       } else {
-        DOM.loginErrorMsg.textContent = res?.error || 'Login failed';
+        const errMsg = res?.error || 'Login failed';
+        DOM.loginErrorMsg.textContent = errMsg;
         DOM.loginErrorMsg.classList.remove('hidden');
+        showToast(errMsg, 'error');
       }
     });
   });
@@ -1141,6 +1194,8 @@ function setupEventListeners() {
     DOM.authTabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
     DOM.registerForm.classList.remove('hidden');
     DOM.loginForm.classList.add('hidden');
+    if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
+    if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
   });
 
   DOM.authTabLogin.addEventListener('click', () => {
@@ -1148,6 +1203,8 @@ function setupEventListeners() {
     DOM.authTabRegister.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white';
     DOM.loginForm.classList.remove('hidden');
     DOM.registerForm.classList.add('hidden');
+    if (DOM.regErrorMsg) DOM.regErrorMsg.classList.add('hidden');
+    if (DOM.loginErrorMsg) DOM.loginErrorMsg.classList.add('hidden');
   });
 
   DOM.randomizeAvatarsBtn.addEventListener('click', randomizeAvatars);

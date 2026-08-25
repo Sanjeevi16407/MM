@@ -210,3 +210,66 @@ html:not(.dark) .glass-panel {
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   MOBILE FIRST & PWA ENHANCEMENTS
+   ========================================================= */
+
+/* Mobile Bottom Navigation Button Active State */
+.mobile-tab-btn {
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-tab-btn.active {
+  color: #f59e0b;
+}
+.mobile-tab-btn.active i,
+.mobile-tab-btn.active span {
+  color: #f59e0b;
+  font-weight: 800;
+}
+
+/* Safe Area Inset Support for iOS & Android */
+#mobileBottomNav {
+  padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 768px) {
+  /* Offset content above the bottom app bar */
+  #sectionHomePane,
+  #sectionDiscoverPane,
+  #sectionOnlinePane,
+  #sectionMingledPane {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Chat form stays pinned above mobile bottom bar if hidden, or stays sticky */
+  #sectionChatsPane {
+    padding-bottom: 0 !important;
+  }
+
+  /* Mobile Story Avatar Bubbles */
+  .story-bubble {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 62px;
+  }
+  .story-bubble img {
+    width: 52px;
+    height: 52px;
+    border-radius: 9999px;
+    border: 2px solid #f59e0b;
+    padding: 2px;
+    background-color: #0f172a;
+    transition: transform 0.15s ease;
+  }
+  .story-bubble:active img {
+    transform: scale(0.92);
+  }
+}
+

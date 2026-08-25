@@ -273,7 +273,20 @@ const DOM = {
 
   // Lightbox
   imageLightboxModal: document.getElementById('imageLightboxModal'),
-  lightboxImageElement: document.getElementById('lightboxImageElement')
+  lightboxImageElement: document.getElementById('lightboxImageElement'),
+
+  // Mobile Bottom Navigation & Responsive
+  mobileBottomNav: document.getElementById('mobileBottomNav'),
+  mobileNavHome: document.getElementById('mobileNavHome'),
+  mobileNavChats: document.getElementById('mobileNavChats'),
+  mobileNavChatsBadge: document.getElementById('mobileNavChatsBadge'),
+  mobileNavSurprise: document.getElementById('mobileNavSurprise'),
+  mobileNavOnline: document.getElementById('mobileNavOnline'),
+  mobileNavProfile: document.getElementById('mobileNavProfile'),
+  mobileNavAvatar: document.getElementById('mobileNavAvatar'),
+  mobileSidebarBackdrop: document.getElementById('mobileSidebarBackdrop'),
+  chatMobileBackBtn: document.getElementById('chatMobileBackBtn'),
+  mobileStoriesReel: document.getElementById('mobileStoriesReel')
 };
 
 // 4. INITIALIZATION
@@ -337,7 +350,7 @@ function setCurrentUser(user) {
   state.currentUser = user;
   localStorage.setItem('mingle_user', JSON.stringify(user));
 
-  // Update Top Bar & Footers
+  // Update Top Bar & Footers & Mobile Nav
   DOM.headerAvatar.src = user.avatar;
   DOM.headerDisplayName.textContent = user.displayName;
   DOM.headerUsername.textContent = `@${user.username}`;
@@ -345,6 +358,7 @@ function setCurrentUser(user) {
   DOM.footerDisplayName.textContent = user.displayName;
   DOM.footerUsername.textContent = `@${user.username}`;
   DOM.homeHeroName.textContent = user.displayName;
+  if (DOM.mobileNavAvatar) DOM.mobileNavAvatar.src = user.avatar;
 
   DOM.userMingleStatusSelect.value = user.mingleStatus || 'available';
 
@@ -541,7 +555,13 @@ function switchSection(sectionName) {
 
   // Update Nav Hub Button Classes
   [DOM.navBtnHome, DOM.navBtnChats, DOM.navBtnDiscover, DOM.navBtnOnline, DOM.navBtnMingled].forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.section === sectionName);
+    if (btn) btn.classList.toggle('active', btn.dataset.section === sectionName);
+  });
+
+  // Update Mobile Bottom Nav Active Classes
+  const mobileButtons = [DOM.mobileNavHome, DOM.mobileNavChats, DOM.mobileNavOnline];
+  mobileButtons.forEach(btn => {
+    if (btn) btn.classList.toggle('active', btn.dataset.section === sectionName);
   });
 
   // Hide All Panes
@@ -573,7 +593,8 @@ function switchSection(sectionName) {
   }
 
   // Close mobile sidebar on selection
-  DOM.mainNavSidebar.classList.add('-translate-x-full');
+  if (DOM.mainNavSidebar) DOM.mainNavSidebar.classList.add('-translate-x-full');
+  if (DOM.mobileSidebarBackdrop) DOM.mobileSidebarBackdrop.classList.add('hidden');
   lucide.createIcons();
 }
 
@@ -587,8 +608,54 @@ function loadHomeData() {
       DOM.navOnlineBadge.textContent = res.totalOnlineCount;
       DOM.navMingledBadge.textContent = res.minglesCount;
 
+      renderMobileStories(res.onlineMingles);
       renderHomeOnlineMingles(res.onlineMingles);
     }
+  });
+}
+
+function renderMobileStories(mingles) {
+  if (!DOM.mobileStoriesReel) return;
+  DOM.mobileStoriesReel.innerHTML = '';
+
+  // 1. My profile / surprise quick bubble
+  const surpriseBubble = document.createElement('div');
+  surpriseBubble.className = 'story-bubble';
+  surpriseBubble.onclick = () => switchSection('surprise');
+  surpriseBubble.innerHTML = `
+    <div class="w-[52px] h-[52px] rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-xl shadow-lg border-2 border-slate-950">
+      🎲
+    </div>
+    <span class="text-[10px] font-bold text-amber-400 truncate max-w-[58px]">Surprise</span>
+  `;
+  DOM.mobileStoriesReel.appendChild(surpriseBubble);
+
+  if (!mingles || mingles.length === 0) {
+    const emptyNotice = document.createElement('div');
+    emptyNotice.className = 'story-bubble opacity-60';
+    emptyNotice.onclick = () => switchSection('discover');
+    emptyNotice.innerHTML = `
+      <div class="w-[52px] h-[52px] rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-400">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+      </div>
+      <span class="text-[9px] text-slate-400 truncate max-w-[58px]">Find Mingles</span>
+    `;
+    DOM.mobileStoriesReel.appendChild(emptyNotice);
+    return;
+  }
+
+  mingles.forEach(u => {
+    const bubble = document.createElement('div');
+    bubble.className = 'story-bubble';
+    bubble.onclick = () => openChatWithUser(u.id);
+    bubble.innerHTML = `
+      <div class="relative">
+        <img src="${u.avatar}" class="w-[52px] h-[52px] rounded-full object-cover">
+        <span class="status-indicator status-online bottom-0.5 right-0.5 w-2.5 h-2.5"></span>
+      </div>
+      <span class="text-[10px] font-medium text-slate-200 truncate max-w-[58px]">${escapeHtml(u.displayName.split(' ')[0])}</span>
+    `;
+    DOM.mobileStoriesReel.appendChild(bubble);
   });
 }
 
@@ -709,8 +776,13 @@ function refreshThreads() {
       if (totalUnread > 0) {
         DOM.navChatsBadge.textContent = totalUnread;
         DOM.navChatsBadge.classList.remove('hidden');
+        if (DOM.mobileNavChatsBadge) {
+          DOM.mobileNavChatsBadge.textContent = totalUnread;
+          DOM.mobileNavChatsBadge.classList.remove('hidden');
+        }
       } else {
         DOM.navChatsBadge.classList.add('hidden');
+        if (DOM.mobileNavChatsBadge) DOM.mobileNavChatsBadge.classList.add('hidden');
       }
     }
   });
@@ -1488,9 +1560,38 @@ function setupEventListeners() {
     DOM.rightProfileDrawer.classList.remove('xl:flex');
   });
 
+  // Mobile Menu Toggle & Backdrop
   DOM.mobileMenuToggle.addEventListener('click', () => {
-    DOM.mainNavSidebar.classList.toggle('-translate-x-full');
+    const isClosed = DOM.mainNavSidebar.classList.contains('-translate-x-full');
+    if (isClosed) {
+      DOM.mainNavSidebar.classList.remove('-translate-x-full');
+      if (DOM.mobileSidebarBackdrop) DOM.mobileSidebarBackdrop.classList.remove('hidden');
+    } else {
+      DOM.mainNavSidebar.classList.add('-translate-x-full');
+      if (DOM.mobileSidebarBackdrop) DOM.mobileSidebarBackdrop.classList.add('hidden');
+    }
   });
+
+  if (DOM.mobileSidebarBackdrop) {
+    DOM.mobileSidebarBackdrop.addEventListener('click', () => {
+      DOM.mainNavSidebar.classList.add('-translate-x-full');
+      DOM.mobileSidebarBackdrop.classList.add('hidden');
+    });
+  }
+
+  // Mobile App Bottom Navigation Tabs
+  if (DOM.mobileNavHome) DOM.mobileNavHome.addEventListener('click', () => switchSection('home'));
+  if (DOM.mobileNavChats) DOM.mobileNavChats.addEventListener('click', () => switchSection('chats'));
+  if (DOM.mobileNavSurprise) DOM.mobileNavSurprise.addEventListener('click', () => switchSection('surprise'));
+  if (DOM.mobileNavOnline) DOM.mobileNavOnline.addEventListener('click', () => switchSection('online'));
+  if (DOM.mobileNavProfile) DOM.mobileNavProfile.addEventListener('click', openSettingsModal);
+
+  // Mobile Back Button in Chat View
+  if (DOM.chatMobileBackBtn) {
+    DOM.chatMobileBackBtn.addEventListener('click', () => {
+      switchSection('home');
+    });
+  }
 
   // Sound Toggle
   DOM.soundToggleBtn.addEventListener('click', () => {

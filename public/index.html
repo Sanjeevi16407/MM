@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MINGLE 🐒 — Social Discovery & Real-Time Messaging</title>
   
   <!-- Google Fonts: Plus Jakarta Sans -->
@@ -265,8 +265,11 @@
   <!-- 3. MAIN WORKSPACE -->
   <div class="flex flex-1 overflow-hidden relative">
 
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="mobileSidebarBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-15 hidden md:hidden transition-opacity"></div>
+
     <!-- A. LEFT NAVIGATION HUB (5 Core Sections + Surprise Mingle) -->
-    <aside id="mainNavSidebar" class="w-72 bg-slate-950/90 border-r border-slate-800/80 flex flex-col z-20 transition-transform duration-300 md:translate-x-0 -translate-x-full absolute md:relative h-full shrink-0">
+    <aside id="mainNavSidebar" class="w-72 bg-slate-950/95 border-r border-slate-800/80 flex flex-col z-20 transition-transform duration-300 md:translate-x-0 -translate-x-full absolute md:relative h-full shrink-0 shadow-2xl md:shadow-none">
       
       <!-- Primary Navigation Buttons -->
       <nav class="p-3 space-y-1 border-b border-slate-800/80">
@@ -341,9 +344,17 @@
     <main class="flex-1 flex flex-col bg-[#07090D] h-full overflow-hidden relative">
 
       <!-- ================= 1. HOME SECTION ================= -->
-      <section id="sectionHomePane" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
+      <section id="sectionHomePane" class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 custom-scrollbar">
+        
+        <!-- Mobile Live Stories / Online Minglers Reel -->
+        <div class="block md:hidden pb-1 -mx-1 px-1 overflow-x-auto custom-scrollbar">
+          <div class="flex items-center gap-3 min-w-max py-1" id="mobileStoriesReel">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
         <!-- Personalized Greeting Hero -->
-        <div class="relative overflow-hidden rounded-3xl p-6 md:p-8 bg-gradient-to-r from-slate-900 via-slate-900/90 to-amber-950/30 border border-slate-800 shadow-xl">
+        <div class="relative overflow-hidden rounded-3xl p-5 sm:p-6 md:p-8 bg-gradient-to-r from-slate-900 via-slate-900/90 to-amber-950/30 border border-slate-800 shadow-xl">
           <div class="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
           <h2 class="text-2xl md:text-3xl font-extrabold text-white">
             <span>Good to see you, </span>
@@ -354,16 +365,16 @@
           </p>
 
           <!-- Quick Stats Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5 sm:mt-6">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
               <p class="text-[10px] uppercase font-bold text-slate-400">Online Mingles</p>
               <p id="homeStatOnlineMingles" class="text-xl font-black text-emerald-400 mt-1">0</p>
             </div>
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
               <p class="text-[10px] uppercase font-bold text-slate-400">Total Connections</p>
               <p id="homeStatTotalMingles" class="text-xl font-black text-amber-400 mt-1">0</p>
             </div>
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 col-span-2 sm:col-span-1">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 col-span-2 sm:col-span-1">
               <p class="text-[10px] uppercase font-bold text-slate-400">Live on Platform</p>
               <p id="homeStatTotalOnline" class="text-xl font-black text-cyan-400 mt-1">0</p>
             </div>
@@ -385,16 +396,16 @@
         </div>
 
         <!-- Discovery Callout Card -->
-        <div class="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
           <div class="text-center md:text-left">
             <h4 class="text-base font-bold text-white">Looking for someone to Mingle with?</h4>
             <p class="text-xs text-slate-400 mt-1">Search by @username or browse currently active minglers.</p>
           </div>
-          <div class="flex gap-2.5">
-            <button id="homeDiscoverBtn" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-md transition">
+          <div class="flex gap-2.5 w-full md:w-auto">
+            <button id="homeDiscoverBtn" class="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-md transition">
               🔍 Discover People
             </button>
-            <button id="homeSurpriseBtn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1.5">
+            <button id="homeSurpriseBtn" class="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5">
               <span>🎲 Surprise Mingle</span>
             </button>
           </div>
@@ -405,17 +416,22 @@
       <section id="sectionChatsPane" class="hidden flex-1 flex flex-col h-full overflow-hidden">
         
         <!-- Active Chat Header -->
-        <header class="h-14 border-b border-slate-800/80 px-4 md:px-6 flex items-center justify-between bg-slate-950/60 backdrop-blur-md z-10 shrink-0">
-          <div class="flex items-center gap-3 min-w-0">
+        <header class="h-14 border-b border-slate-800/80 px-3 sm:px-4 md:px-6 flex items-center justify-between bg-slate-950/60 backdrop-blur-md z-10 shrink-0">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <!-- Mobile Chat Back Button -->
+            <button id="chatMobileBackBtn" class="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-white rounded-lg transition" title="Back to Chats">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            
             <div class="relative shrink-0 cursor-pointer" id="chatPartnerAvatarTrigger">
               <img id="chatPartnerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=partner" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 object-cover">
               <span id="chatPartnerStatusDot" class="status-indicator status-online bottom-0 right-0"></span>
             </div>
             <div class="min-w-0 cursor-pointer" id="chatPartnerNameTrigger">
               <div class="flex items-center gap-2">
-                <h2 id="chatPartnerDisplayName" class="text-sm font-bold text-white truncate">Alex</h2>
-                <span id="chatPartnerUsername" class="text-[10px] text-amber-400/80 font-mono truncate">@alex</span>
-                <span id="chatMingleStateBadge" class="text-[10px] px-2 py-0.2 rounded-full font-semibold border">✓ Mingled</span>
+                <h2 id="chatPartnerDisplayName" class="text-sm font-bold text-white truncate">User</h2>
+                <span id="chatPartnerUsername" class="text-[10px] text-amber-400/80 font-mono truncate">@username</span>
+                <span id="chatMingleStateBadge" class="hidden sm:inline-block text-[10px] px-2 py-0.2 rounded-full font-semibold border">✓ Mingled</span>
               </div>
               <p id="chatPartnerBio" class="text-[11px] text-slate-400 truncate max-w-sm">Online • Available to chat</p>
             </div>
@@ -792,6 +808,30 @@
       <p class="text-xs text-slate-400 mt-2">Click anywhere to close</p>
     </div>
   </div>
+
+  <!-- 5. MOBILE APP BOTTOM NAVIGATION BAR (Fixed for mobile devices) -->
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800/90 backdrop-blur-2xl px-2 py-1.5 flex items-center justify-around">
+    <button id="mobileNavHome" class="mobile-tab-btn active flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="home">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Home</span>
+    </button>
+    <button id="mobileNavChats" class="mobile-tab-btn relative flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="chats">
+      <i data-lucide="message-circle" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Chats</span>
+      <span id="mobileNavChatsBadge" class="hidden absolute top-0 right-2 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[8px] font-bold">0</span>
+    </button>
+    <button id="mobileNavSurprise" class="mobile-tab-btn flex flex-col items-center justify-center -mt-5 p-2.5 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 text-slate-950 shadow-xl shadow-amber-500/40 border-2 border-slate-950 transform active:scale-95 transition" data-section="surprise" title="Surprise Mingle">
+      <span class="text-xl leading-none">🎲</span>
+    </button>
+    <button id="mobileNavOnline" class="mobile-tab-btn flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="online">
+      <i data-lucide="radio" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Online</span>
+    </button>
+    <button id="mobileNavProfile" class="mobile-tab-btn flex flex-col items-center gap-0.5 py-1 px-3 text-slate-400 hover:text-amber-400" data-section="profile">
+      <img id="mobileNavAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-5 h-5 rounded-full object-cover border border-amber-500/40">
+      <span class="text-[9px] font-bold">Profile</span>
+    </button>
+  </nav>
 
   <!-- Socket.io Client (with CDN fallback) -->
   <script src="/socket.io/socket.io.js"></script>

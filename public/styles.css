@@ -293,4 +293,43 @@ body {
   }
 }
 
+/* =========================================================
+   LIVE WEBRTC VIDEO CALLING STYLES
+   ========================================================= */
+#incomingCallModal.hidden,
+#activeVideoCallModal.hidden {
+  display: none !important;
+}
+
+#activeVideoCallModal:not(.hidden) {
+  display: flex !important;
+}
+
+#incomingCallModal:not(.hidden) {
+  display: flex !important;
+}
+
+.mirror-mode {
+  transform: scaleX(-1);
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 10s linear infinite;
+}
+
+/* Draggable / Pip window floating transition */
+#localVideoContainer {
+  touch-action: none;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
 

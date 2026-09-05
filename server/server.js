@@ -13,6 +13,7 @@ const registerUserHandlers = require('./socket/users');
 const { registerChannelHandlers } = require('./socket/channels');
 const registerMessageHandlers = require('./socket/messages');
 const matchmakingModule = require('./socket/matchmaking');
+const registerCallHandlers = require('./socket/call');
 const { v4: uuidv4 } = require('uuid');
 const { db, scheduleSave } = require('./utils/storage');
 const {
@@ -316,6 +317,7 @@ io.on('connection', (socket) => {
   registerUserHandlers(io, socket, matchmakingModule);
   registerChannelHandlers(io, socket);
   registerMessageHandlers(io, socket);
+  registerCallHandlers(io, socket);
   matchmakingModule.registerMatchmakingHandlers(io, socket);
 });
 

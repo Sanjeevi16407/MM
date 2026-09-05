@@ -209,10 +209,59 @@ async function runMingleTests() {
     });
   });
 
+  // Test 11: WebRTC Live Video & Audio Calling Flow
+  let activeCallId = null;
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('WebRTC Call Test timed out')), 5000);
+
+    // Client 2 listens for incoming call
+    client2.once('call:incoming', (incoming) => {
+      console.log(`✅ [Test 11A Passed] Alex received incoming ${incoming.callType} call from @${incoming.caller.username}!`);
+      activeCallId = incoming.callId;
+
+      // Alex accepts the call
+      client2.emit('call:accept', { callId: incoming.callId }, (acceptRes) => {
+        if (!acceptRes.success) reject(new Error('Accept call failed'));
+      });
+    });
+
+    // Client 1 listens for accepted signal
+    client1.once('call:accepted', (accepted) => {
+      console.log(`✅ [Test 11B Passed] Sanjeevi received call acceptance signal from Alex!`);
+
+      // Exchange WebRTC SDP signal
+      client1.emit('call:signal', {
+        callId: accepted.callId,
+        targetUserId: userAlex.id,
+        signal: { offer: { type: 'offer', sdp: 'v=0\r\no=mock...' } }
+      });
+    });
+
+    // Client 2 receives WebRTC SDP signal
+    client2.once('call:signal', (signaled) => {
+      console.log(`✅ [Test 11C Passed] WebRTC SDP offer signal delivered to Alex successfully!`);
+
+      // End call
+      client1.emit('call:end', { callId: activeCallId });
+    });
+
+    // Client 2 receives call ended
+    client2.once('call:ended', (ended) => {
+      console.log(`✅ [Test 11D Passed] Call successfully terminated and cleaned up.`);
+      clearTimeout(timeout);
+      resolve();
+    });
+
+    // Sanjeevi initiates video call to Alex
+    client1.emit('call:initiate', { recipientId: userAlex.id, callType: 'video' }, (initRes) => {
+      if (!initRes.success) reject(new Error(initRes.error || 'Call initiate failed'));
+    });
+  });
+
   client1.disconnect();
   client2.disconnect();
 
-  console.log('\n🎉 ALL 10 MINGLE PLATFORM TESTS PASSED! Password auth, Instagram-style photo uploads, discovery, social graph, chat, and surprise mingle are fully operational.');
+  console.log('\n🎉 ALL 11 MINGLE PLATFORM TESTS PASSED! WebRTC Live Video Calling, Password auth, Instagram-style photo uploads, discovery, social graph, chat, and surprise mingle are fully operational.');
   process.exit(0);
 }
 

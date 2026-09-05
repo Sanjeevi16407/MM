@@ -11,10 +11,12 @@ const {
 } = require('../utils/users');
 const { validateMessage } = require('../utils/validation');
 
-// Matchmaking queue: array of { userId, socketId }
+// Matchmaking queue: array of { userId, socketId, mode }
 let surpriseQueue = [];
 // Active matched pairs: userId -> partnerUserId
 const activePairs = new Map();
+// Active pair modes: userId -> 'video' | 'text'
+const pairModes = new Map();
 
 function registerMatchmakingHandlers(io, socket) {
   function endPairing(userId, notifyPartner = true) {
@@ -24,18 +26,26 @@ function registerMatchmakingHandlers(io, socket) {
     if (partnerId) {
       activePairs.delete(userId);
       activePairs.delete(partnerId);
+      pairModes.delete(userId);
+      pairModes.delete(partnerId);
 
       const partner = getUserById(partnerId);
       if (notifyPartner && partner) {
         io.to(`user:${partnerId}`).emit('surprise:partner-left', {
-          message: 'Your surprise match has disconnected.'
+          message: 'Stranger has skipped/disconnected.'
         });
       }
     }
   }
 
   // 1. surprise:find
-  socket.on('surprise:find', (callback) => {
+  socket.on('surprise:find', (data, callback) => {
+    if (typeof data === 'function') {
+      callback = data;
+      data = { mode: 'video' };
+    }
+    const mode = data?.mode === 'text' ? 'text' : 'video';
+
     const user = getUserBySocketId(socket.id);
     if (!user) {
       if (typeof callback === 'function') callback({ success: false, error: 'Not logged in' });
@@ -45,46 +55,70 @@ function registerMatchmakingHandlers(io, socket) {
     endPairing(user.id, true);
     surpriseQueue = surpriseQueue.filter(item => item.userId !== user.id);
 
-    // Find first compatible online user
-    let partnerEntry = null;
-    while (surpriseQueue.length > 0) {
-      const candidate = surpriseQueue.shift();
-      const candidateUser = getUserById(candidate.userId);
-      if (candidateUser && candidate.userId !== user.id) {
-        partnerEntry = candidate;
-        break;
+    // Find first compatible online user with matching mode
+    let partnerIndex = -1;
+    for (let i = 0; i < surpriseQueue.length; i++) {
+      const candidate = surpriseQueue[i];
+      if (candidate.userId !== user.id && candidate.mode === mode) {
+        const candidateUser = getUserById(candidate.userId);
+        if (candidateUser) {
+          partnerIndex = i;
+          break;
+        }
       }
     }
 
-    if (partnerEntry) {
+    if (partnerIndex !== -1) {
+      const partnerEntry = surpriseQueue.splice(partnerIndex, 1)[0];
       const partnerUser = getUserById(partnerEntry.userId);
       const matchRoomId = `surprise_${uuidv4()}`;
 
       activePairs.set(user.id, partnerUser.id);
       activePairs.set(partnerUser.id, user.id);
+      pairModes.set(user.id, mode);
+      pairModes.set(partnerUser.id, mode);
 
       socket.emit('surprise:matched', {
         matchId: matchRoomId,
-        partner: getPublicProfile(partnerUser, user.id)
+        partner: getPublicProfile(partnerUser, user.id),
+        mode,
+        isInitiator: true
       });
 
       io.to(`user:${partnerUser.id}`).emit('surprise:matched', {
         matchId: matchRoomId,
-        partner: getPublicProfile(user, partnerUser.id)
+        partner: getPublicProfile(user, partnerUser.id),
+        mode,
+        isInitiator: false
       });
 
-      if (typeof callback === 'function') callback({ success: true, matched: true });
+      if (typeof callback === 'function') callback({ success: true, matched: true, mode });
     } else {
-      surpriseQueue.push({ userId: user.id, socketId: socket.id });
+      surpriseQueue.push({ userId: user.id, socketId: socket.id, mode });
       socket.emit('surprise:waiting', {
-        message: 'Looking for an online mingler...'
+        message: mode === 'video' ? 'Searching for next random stranger...' : 'Looking for an online mingler...',
+        mode
       });
 
-      if (typeof callback === 'function') callback({ success: true, matched: false, queued: true });
+      if (typeof callback === 'function') callback({ success: true, matched: false, queued: true, mode });
     }
   });
 
-  // 2. surprise:message
+  // 2. surprise:signal (Omegle WebRTC P2P Video/Audio Signaling)
+  socket.on('surprise:signal', (data) => {
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+
+    const partnerId = activePairs.get(user.id);
+    if (!partnerId || !data?.signal) return;
+
+    io.to(`user:${partnerId}`).emit('surprise:signal', {
+      senderId: user.id,
+      signal: data.signal
+    });
+  });
+
+  // 3. surprise:message
   socket.on('surprise:message', (data, callback) => {
     const user = getUserBySocketId(socket.id);
     if (!user) return;
@@ -119,7 +153,7 @@ function registerMatchmakingHandlers(io, socket) {
     if (typeof callback === 'function') callback({ success: true, message });
   });
 
-  // 3. surprise:typing
+  // 4. surprise:typing
   socket.on('surprise:typing', (data) => {
     const user = getUserBySocketId(socket.id);
     if (!user) return;
@@ -132,54 +166,67 @@ function registerMatchmakingHandlers(io, socket) {
     }
   });
 
-  // 4. surprise:next
-  socket.on('surprise:next', () => {
+  // 5. surprise:next (Omegle Fast Skip)
+  socket.on('surprise:next', (data) => {
+    const mode = data?.mode === 'text' ? 'text' : (pairModes.get(socket.id) || 'video');
     const user = getUserBySocketId(socket.id);
     if (!user) return;
 
     endPairing(user.id, true);
 
-    socket.emit('surprise:waiting', { message: 'Looking for another online mingler...' });
+    socket.emit('surprise:waiting', {
+      message: 'Searching for next random stranger...',
+      mode
+    });
 
-    let partnerEntry = null;
-    while (surpriseQueue.length > 0) {
-      const candidate = surpriseQueue.shift();
-      const candidateUser = getUserById(candidate.userId);
-      if (candidateUser && candidate.userId !== user.id) {
-        partnerEntry = candidate;
-        break;
+    let partnerIndex = -1;
+    for (let i = 0; i < surpriseQueue.length; i++) {
+      const candidate = surpriseQueue[i];
+      if (candidate.userId !== user.id && candidate.mode === mode) {
+        const candidateUser = getUserById(candidate.userId);
+        if (candidateUser) {
+          partnerIndex = i;
+          break;
+        }
       }
     }
 
-    if (partnerEntry) {
+    if (partnerIndex !== -1) {
+      const partnerEntry = surpriseQueue.splice(partnerIndex, 1)[0];
       const partnerUser = getUserById(partnerEntry.userId);
       const matchRoomId = `surprise_${uuidv4()}`;
 
       activePairs.set(user.id, partnerUser.id);
       activePairs.set(partnerUser.id, user.id);
+      pairModes.set(user.id, mode);
+      pairModes.set(partnerUser.id, mode);
 
       socket.emit('surprise:matched', {
         matchId: matchRoomId,
-        partner: getPublicProfile(partnerUser, user.id)
+        partner: getPublicProfile(partnerUser, user.id),
+        mode,
+        isInitiator: true
       });
 
       io.to(`user:${partnerUser.id}`).emit('surprise:matched', {
         matchId: matchRoomId,
-        partner: getPublicProfile(user, partnerUser.id)
+        partner: getPublicProfile(user, partnerUser.id),
+        mode,
+        isInitiator: false
       });
     } else {
-      surpriseQueue.push({ userId: user.id, socketId: socket.id });
+      surpriseQueue.push({ userId: user.id, socketId: socket.id, mode });
     }
   });
 
-  // 5. surprise:leave
+  // 6. surprise:leave
   socket.on('surprise:leave', () => {
     const user = getUserBySocketId(socket.id);
     if (!user) return;
     endPairing(user.id, true);
   });
 
-  // 6. surprise:mingle_now (Instant Mingle from surprise chat!)
+  // 7. surprise:mingle_now (Instant Mingle from surprise chat!)
   socket.on('surprise:mingle_now', (callback) => {
     const user = getUserBySocketId(socket.id);
     if (!user) return;
@@ -209,9 +256,11 @@ function handleUserDisconnect(io, userId) {
   if (partnerId) {
     activePairs.delete(userId);
     activePairs.delete(partnerId);
+    pairModes.delete(userId);
+    pairModes.delete(partnerId);
     if (io) {
       io.to(`user:${partnerId}`).emit('surprise:partner-left', {
-        message: 'Your surprise match has disconnected.'
+        message: 'Stranger has disconnected.'
       });
     }
   }

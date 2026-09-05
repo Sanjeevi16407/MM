@@ -313,19 +313,33 @@ const DOM = {
   mingledCountPill: document.getElementById('mingledCountPill'),
   mingledNetworkGrid: document.getElementById('mingledNetworkGrid'),
 
-  // Surprise Elements
+  // Surprise / Omegle Live Video Elements
   surpriseHeaderTitle: document.getElementById('surpriseHeaderTitle'),
   surpriseHeaderSubtitle: document.getElementById('surpriseHeaderSubtitle'),
+  surpriseLivePill: document.getElementById('surpriseLivePill'),
+  surpriseModeVideoBtn: document.getElementById('surpriseModeVideoBtn'),
+  surpriseModeTextBtn: document.getElementById('surpriseModeTextBtn'),
   surpriseMingleNowBtn: document.getElementById('surpriseMingleNowBtn'),
   surpriseNextBtn: document.getElementById('surpriseNextBtn'),
   surpriseExitBtn: document.getElementById('surpriseExitBtn'),
-  surpriseRadarState: document.getElementById('surpriseRadarState'),
-  cancelSurpriseSearchBtn: document.getElementById('cancelSurpriseSearchBtn'),
-  surpriseActiveChatState: document.getElementById('surpriseActiveChatState'),
-  surprisePartnerAvatar: document.getElementById('surprisePartnerAvatar'),
-  surprisePartnerName: document.getElementById('surprisePartnerName'),
-  surprisePartnerUsername: document.getElementById('surprisePartnerUsername'),
-  surprisePartnerBio: document.getElementById('surprisePartnerBio'),
+  surpriseVideoStage: document.getElementById('surpriseVideoStage'),
+  surpriseStrangerVideo: document.getElementById('surpriseStrangerVideo'),
+  surpriseStrangerAudio: document.getElementById('surpriseStrangerAudio'),
+  surpriseStrangerBadge: document.getElementById('surpriseStrangerBadge'),
+  surpriseStrangerAvatar: document.getElementById('surpriseStrangerAvatar'),
+  surpriseStrangerName: document.getElementById('surpriseStrangerName'),
+  surpriseStrangerUsername: document.getElementById('surpriseStrangerUsername'),
+  surpriseStrangerRadar: document.getElementById('surpriseStrangerRadar'),
+  surpriseRadarTitle: document.getElementById('surpriseRadarTitle'),
+  surpriseRadarSubtitle: document.getElementById('surpriseRadarSubtitle'),
+  surpriseMyVideo: document.getElementById('surpriseMyVideo'),
+  surpriseToggleMicBtn: document.getElementById('surpriseToggleMicBtn'),
+  surpriseMicIcon: document.getElementById('surpriseMicIcon'),
+  surpriseToggleCamBtn: document.getElementById('surpriseToggleCamBtn'),
+  surpriseCamIcon: document.getElementById('surpriseCamIcon'),
+  surpriseFlipCamBtn: document.getElementById('surpriseFlipCamBtn'),
+  surpriseMyCamOffOverlay: document.getElementById('surpriseMyCamOffOverlay'),
+  surpriseChatDrawer: document.getElementById('surpriseChatDrawer'),
   surpriseMessagesStream: document.getElementById('surpriseMessagesStream'),
   surpriseTypingStrip: document.getElementById('surpriseTypingStrip'),
   surpriseChatForm: document.getElementById('surpriseChatForm'),
@@ -724,29 +738,22 @@ function initSocket() {
     }
   });
 
-  // Surprise Mingle Events
-  state.socket.on('surprise:waiting', () => {
-    DOM.surpriseRadarState.classList.remove('hidden');
-    DOM.surpriseActiveChatState.classList.add('hidden');
-    DOM.surpriseMingleNowBtn.classList.add('hidden');
+  // Surprise Omegle Events
+  state.socket.on('surprise:waiting', (data) => {
+    surpriseState.isSearching = true;
+    if (DOM.surpriseStrangerRadar) DOM.surpriseStrangerRadar.classList.remove('hidden');
+    if (DOM.surpriseStrangerBadge) DOM.surpriseStrangerBadge.classList.add('hidden');
+    if (DOM.surpriseMingleNowBtn) DOM.surpriseMingleNowBtn.classList.add('hidden');
+    if (DOM.surpriseStrangerVideo) DOM.surpriseStrangerVideo.srcObject = null;
+    if (DOM.surpriseRadarTitle) DOM.surpriseRadarTitle.textContent = data?.message || 'Searching for next stranger...';
   });
 
-  state.socket.on('surprise:matched', (data) => {
-    state.activeSurprisePartner = data.partner;
-    DOM.surpriseRadarState.classList.add('hidden');
-    DOM.surpriseActiveChatState.classList.remove('hidden');
-    DOM.surpriseMingleNowBtn.classList.remove('hidden');
+  state.socket.on('surprise:matched', async (data) => {
+    await handleSurpriseMatched(data);
+  });
 
-    DOM.surprisePartnerAvatar.src = data.partner.avatar;
-    DOM.surprisePartnerName.textContent = data.partner.displayName;
-    DOM.surprisePartnerUsername.textContent = `@${data.partner.username}`;
-    DOM.surprisePartnerBio.textContent = data.partner.bio || 'Surprise Mingle Match';
-
-    DOM.surpriseMessagesStream.innerHTML = '';
-    appendSystemMessage(`✨ You are connected with ${data.partner.displayName} (@${data.partner.username})! Say hello or click Mingle to connect permanently.`, DOM.surpriseMessagesStream);
-
-    sounds.playMingleConnect();
-    showToast(`Connected with @${data.partner.username}!`, 'success');
+  state.socket.on('surprise:signal', async (data) => {
+    await handleSurpriseSignal(data);
   });
 
   state.socket.on('surprise:message', (msg) => {
@@ -765,11 +772,27 @@ function initSocket() {
   });
 
   state.socket.on('surprise:partner-left', (data) => {
-    appendSystemMessage(`⚠️ ${data.message}`, DOM.surpriseMessagesStream);
-    DOM.surpriseHeaderTitle.textContent = 'Match Disconnected';
-    state.activeSurprisePartner = null;
-    DOM.surpriseMingleNowBtn.classList.add('hidden');
-    showToast('Your surprise match has disconnected.', 'info');
+    appendSystemMessage(`⚠️ ${data.message || 'Stranger has skipped/disconnected.'}`, DOM.surpriseMessagesStream);
+    if (surpriseState.peerConnection) {
+      surpriseState.peerConnection.close();
+      surpriseState.peerConnection = null;
+    }
+    if (DOM.surpriseStrangerVideo) DOM.surpriseStrangerVideo.srcObject = null;
+    if (DOM.surpriseStrangerBadge) DOM.surpriseStrangerBadge.classList.add('hidden');
+    if (DOM.surpriseMingleNowBtn) DOM.surpriseMingleNowBtn.classList.add('hidden');
+    if (DOM.surpriseStrangerRadar) {
+      DOM.surpriseStrangerRadar.classList.remove('hidden');
+      if (DOM.surpriseRadarTitle) DOM.surpriseRadarTitle.textContent = 'Stranger skipped. Finding next...';
+    }
+    showToast('Stranger skipped or disconnected. Finding next...', 'info');
+    // Automatically auto-search next stranger
+    if (state.activeSection === 'surprise') {
+      setTimeout(() => {
+        if (state.activeSection === 'surprise' && !surpriseState.activePartner) {
+          state.socket.emit('surprise:find', { mode: surpriseState.mode });
+        }
+      }, 1200);
+    }
   });
 
   // ==========================================
@@ -1266,8 +1289,333 @@ function stopCallTimer() {
   }
 }
 
+// ==========================================
+// 6C. SURPRISE LIVE VIDEO / OMEGLE ENGINE
+// ==========================================
+const surpriseState = {
+  mode: 'video', // 'video' | 'text'
+  localStream: null,
+  peerConnection: null,
+  activePartner: null,
+  isInitiator: false,
+  isMicMuted: false,
+  isCamOff: false,
+  facingMode: 'user',
+  isSearching: true
+};
+
+async function initSurpriseVideo() {
+  if (surpriseState.mode !== 'video') return;
+  if (!surpriseState.localStream) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: {
+          facingMode: surpriseState.facingMode,
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        }
+      });
+      surpriseState.localStream = stream;
+      if (DOM.surpriseMyVideo) {
+        DOM.surpriseMyVideo.srcObject = stream;
+      }
+    } catch (err) {
+      console.warn('Could not acquire camera/mic for Omegle video:', err);
+      showToast('Camera/Mic permission required for Live Video Mingle', 'info');
+    }
+  }
+}
+
+async function startSurpriseMatchmaking(mode = surpriseState.mode) {
+  surpriseState.mode = mode;
+  surpriseState.isSearching = true;
+
+  updateSurpriseModeUI();
+  if (DOM.surpriseStrangerRadar) DOM.surpriseStrangerRadar.classList.remove('hidden');
+  if (DOM.surpriseStrangerBadge) DOM.surpriseStrangerBadge.classList.add('hidden');
+  if (DOM.surpriseMingleNowBtn) DOM.surpriseMingleNowBtn.classList.add('hidden');
+  if (DOM.surpriseStrangerVideo) DOM.surpriseStrangerVideo.srcObject = null;
+  if (DOM.surpriseStrangerAudio) DOM.surpriseStrangerAudio.srcObject = null;
+
+  if (mode === 'video') {
+    await initSurpriseVideo();
+  } else {
+    if (surpriseState.localStream) {
+      surpriseState.localStream.getTracks().forEach(t => t.stop());
+      surpriseState.localStream = null;
+      if (DOM.surpriseMyVideo) DOM.surpriseMyVideo.srcObject = null;
+    }
+  }
+
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('surprise:find', { mode });
+  }
+}
+
+function updateSurpriseModeUI() {
+  const isVideo = surpriseState.mode === 'video';
+  if (DOM.surpriseModeVideoBtn) {
+    DOM.surpriseModeVideoBtn.className = isVideo ?
+      'px-3 py-1 rounded-lg bg-[#FF5A5F] text-white transition flex items-center gap-1' :
+      'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition flex items-center gap-1';
+  }
+  if (DOM.surpriseModeTextBtn) {
+    DOM.surpriseModeTextBtn.className = !isVideo ?
+      'px-3 py-1 rounded-lg bg-[#FF5A5F] text-white transition flex items-center gap-1' :
+      'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition flex items-center gap-1';
+  }
+  if (DOM.surpriseHeaderTitle) {
+    DOM.surpriseHeaderTitle.textContent = isVideo ? 'Live Video Mingle' : 'Text Stranger Mingle';
+  }
+  if (DOM.surpriseLivePill) {
+    DOM.surpriseLivePill.textContent = isVideo ? '● LIVE OMEGLE' : '● TEXT OMEGLE';
+  }
+  if (DOM.surpriseVideoStage) {
+    DOM.surpriseVideoStage.style.display = isVideo ? 'grid' : 'none';
+  }
+}
+
+async function handleSurpriseMatched(data) {
+  surpriseState.isSearching = false;
+  surpriseState.activePartner = data.partner;
+  surpriseState.isInitiator = !!data.isInitiator;
+  state.activeSurprisePartner = data.partner;
+
+  if (DOM.surpriseStrangerRadar) DOM.surpriseStrangerRadar.classList.add('hidden');
+  if (DOM.surpriseStrangerBadge) DOM.surpriseStrangerBadge.classList.remove('hidden');
+  if (DOM.surpriseStrangerAvatar) DOM.surpriseStrangerAvatar.src = data.partner.avatar;
+  if (DOM.surpriseStrangerName) DOM.surpriseStrangerName.textContent = data.partner.displayName;
+  if (DOM.surpriseStrangerUsername) DOM.surpriseStrangerUsername.textContent = `@${data.partner.username}`;
+  if (DOM.surpriseMingleNowBtn) {
+    DOM.surpriseMingleNowBtn.classList.remove('hidden');
+    DOM.surpriseMingleNowBtn.textContent = '+ MINGLE';
+    DOM.surpriseMingleNowBtn.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-500/30 transition flex items-center gap-1.5';
+  }
+
+  DOM.surpriseMessagesStream.innerHTML = '';
+  appendSystemMessage(`✨ You are connected with ${data.partner.displayName} (@${data.partner.username})! Say hello or press NEXT (Esc) to skip.`, DOM.surpriseMessagesStream);
+  sounds.playMingleConnect();
+
+  if (surpriseState.mode === 'video' && data.mode === 'video') {
+    await setupSurprisePeerConnection(data.isInitiator);
+  }
+}
+
+async function setupSurprisePeerConnection(isInitiator) {
+  if (surpriseState.peerConnection) {
+    surpriseState.peerConnection.close();
+    surpriseState.peerConnection = null;
+  }
+
+  const pc = new RTCPeerConnection(rtcConfig);
+  surpriseState.peerConnection = pc;
+
+  if (surpriseState.localStream) {
+    surpriseState.localStream.getTracks().forEach(track => {
+      pc.addTrack(track, surpriseState.localStream);
+    });
+  }
+
+  pc.ontrack = (event) => {
+    console.log('📡 Stranger remote track received:', event.track.kind);
+    if (DOM.surpriseStrangerVideo) {
+      if (!DOM.surpriseStrangerVideo.srcObject) {
+        DOM.surpriseStrangerVideo.srcObject = new MediaStream();
+      }
+      DOM.surpriseStrangerVideo.srcObject.addTrack(event.track);
+    }
+    if (DOM.surpriseStrangerAudio) {
+      if (!DOM.surpriseStrangerAudio.srcObject) {
+        DOM.surpriseStrangerAudio.srcObject = new MediaStream();
+      }
+      DOM.surpriseStrangerAudio.srcObject.addTrack(event.track);
+    }
+  };
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate && state.socket && state.socket.connected) {
+      state.socket.emit('surprise:signal', {
+        signal: { candidate: event.candidate }
+      });
+    }
+  };
+
+  if (isInitiator) {
+    try {
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
+      await pc.setLocalDescription(offer);
+      state.socket.emit('surprise:signal', {
+        signal: { offer }
+      });
+    } catch (e) {
+      console.error('Error creating Omegle offer:', e);
+    }
+  }
+}
+
+async function handleSurpriseSignal(data) {
+  const { signal } = data;
+  const pc = surpriseState.peerConnection;
+  if (!pc || !signal) return;
+
+  try {
+    if (signal.offer) {
+      await pc.setRemoteDescription(new RTCSessionDescription(signal.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      state.socket.emit('surprise:signal', {
+        signal: { answer }
+      });
+    } else if (signal.answer) {
+      await pc.setRemoteDescription(new RTCSessionDescription(signal.answer));
+    } else if (signal.candidate) {
+      await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+    }
+  } catch (err) {
+    console.error('Error handling Omegle WebRTC signal:', err);
+  }
+}
+
+function skipSurpriseNext() {
+  if (surpriseState.peerConnection) {
+    surpriseState.peerConnection.close();
+    surpriseState.peerConnection = null;
+  }
+  if (DOM.surpriseStrangerVideo) DOM.surpriseStrangerVideo.srcObject = null;
+  if (DOM.surpriseStrangerAudio) DOM.surpriseStrangerAudio.srcObject = null;
+
+  surpriseState.activePartner = null;
+  state.activeSurprisePartner = null;
+  surpriseState.isSearching = true;
+
+  if (DOM.surpriseStrangerRadar) {
+    DOM.surpriseStrangerRadar.classList.remove('hidden');
+    if (DOM.surpriseRadarTitle) DOM.surpriseRadarTitle.textContent = 'Searching for next stranger...';
+  }
+  if (DOM.surpriseStrangerBadge) DOM.surpriseStrangerBadge.classList.add('hidden');
+  if (DOM.surpriseMingleNowBtn) DOM.surpriseMingleNowBtn.classList.add('hidden');
+
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('surprise:next', { mode: surpriseState.mode });
+  }
+}
+
+function exitSurprise() {
+  if (surpriseState.peerConnection) {
+    surpriseState.peerConnection.close();
+    surpriseState.peerConnection = null;
+  }
+  if (surpriseState.localStream) {
+    surpriseState.localStream.getTracks().forEach(t => t.stop());
+    surpriseState.localStream = null;
+  }
+  if (DOM.surpriseMyVideo) DOM.surpriseMyVideo.srcObject = null;
+  if (DOM.surpriseStrangerVideo) DOM.surpriseStrangerVideo.srcObject = null;
+  if (DOM.surpriseStrangerAudio) DOM.surpriseStrangerAudio.srcObject = null;
+
+  surpriseState.activePartner = null;
+  state.activeSurprisePartner = null;
+
+  if (state.socket && state.socket.connected) {
+    state.socket.emit('surprise:leave');
+  }
+  switchSection('home');
+}
+
+function toggleSurpriseMic() {
+  if (!surpriseState.localStream) return;
+  const audioTracks = surpriseState.localStream.getAudioTracks();
+  if (audioTracks.length === 0) return;
+
+  surpriseState.isMicMuted = !surpriseState.isMicMuted;
+  audioTracks.forEach(t => t.enabled = !surpriseState.isMicMuted);
+
+  if (DOM.surpriseMicIcon) {
+    DOM.surpriseMicIcon.setAttribute('data-lucide', surpriseState.isMicMuted ? 'mic-off' : 'mic');
+    if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+  }
+  if (DOM.surpriseToggleMicBtn) {
+    DOM.surpriseToggleMicBtn.classList.toggle('bg-rose-500', surpriseState.isMicMuted);
+  }
+  showToast(surpriseState.isMicMuted ? 'Microphone muted 🔇' : 'Microphone active 🎙️', 'info');
+}
+
+function toggleSurpriseCam() {
+  if (!surpriseState.localStream) return;
+  const videoTracks = surpriseState.localStream.getVideoTracks();
+  if (videoTracks.length === 0) return;
+
+  surpriseState.isCamOff = !surpriseState.isCamOff;
+  videoTracks.forEach(t => t.enabled = !surpriseState.isCamOff);
+
+  if (DOM.surpriseMyCamOffOverlay) {
+    DOM.surpriseMyCamOffOverlay.classList.toggle('hidden', !surpriseState.isCamOff);
+  }
+  if (DOM.surpriseCamIcon) {
+    DOM.surpriseCamIcon.setAttribute('data-lucide', surpriseState.isCamOff ? 'video-off' : 'video');
+    if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+  }
+  if (DOM.surpriseToggleCamBtn) {
+    DOM.surpriseToggleCamBtn.classList.toggle('bg-rose-500', surpriseState.isCamOff);
+  }
+  showToast(surpriseState.isCamOff ? 'Camera paused' : 'Camera resumed', 'info');
+}
+
+async function flipSurpriseCam() {
+  if (!surpriseState.localStream) return;
+  surpriseState.facingMode = surpriseState.facingMode === 'user' ? 'environment' : 'user';
+
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: { facingMode: surpriseState.facingMode, width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    const oldVideoTrack = surpriseState.localStream.getVideoTracks()[0];
+
+    if (surpriseState.peerConnection) {
+      const sender = surpriseState.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newVideoTrack);
+    }
+
+    if (oldVideoTrack) {
+      surpriseState.localStream.removeTrack(oldVideoTrack);
+      oldVideoTrack.stop();
+    }
+    surpriseState.localStream.addTrack(newVideoTrack);
+
+    if (DOM.surpriseMyVideo) {
+      DOM.surpriseMyVideo.srcObject = surpriseState.localStream;
+      DOM.surpriseMyVideo.classList.toggle('mirror-mode', surpriseState.facingMode === 'user');
+    }
+    showToast('Flipped camera 🔄', 'info');
+  } catch (e) {
+    showToast('Could not flip camera', 'error');
+  }
+}
+
 // 7. HUB NAVIGATION & WORKPANE SWITCHER
 function switchSection(sectionName) {
+  // If leaving surprise section, clean up video tracks
+  if (state.activeSection === 'surprise' && sectionName !== 'surprise') {
+    if (surpriseState.localStream) {
+      surpriseState.localStream.getTracks().forEach(t => t.stop());
+      surpriseState.localStream = null;
+    }
+    if (surpriseState.peerConnection) {
+      surpriseState.peerConnection.close();
+      surpriseState.peerConnection = null;
+    }
+    if (state.socket && state.socket.connected) {
+      state.socket.emit('surprise:leave');
+    }
+  }
+
   state.activeSection = sectionName;
 
   // Update Nav Hub Button Classes
@@ -1306,7 +1654,7 @@ function switchSection(sectionName) {
     loadMingledNetwork();
   } else if (sectionName === 'surprise') {
     DOM.sectionSurprisePane.classList.remove('hidden');
-    state.socket.emit('surprise:find');
+    startSurpriseMatchmaking('video');
   }
 
   // Close mobile sidebar on selection
@@ -2282,30 +2630,38 @@ function setupEventListeners() {
     state.socket.emit('surprise:typing', { isTyping: false });
   });
 
-  DOM.surpriseMingleNowBtn.addEventListener('click', () => {
-    state.socket.emit('surprise:mingle_now', (res) => {
-      if (res?.success) {
-        sounds.playMingleConnect();
-        showToast('🎉 You mingled with your surprise partner!', 'success');
-        DOM.surpriseMingleNowBtn.textContent = '✓ MINGLED!';
-        DOM.surpriseMingleNowBtn.classList.add('bg-emerald-600');
-        loadHomeData();
-      }
+  if (DOM.surpriseModeVideoBtn) {
+    DOM.surpriseModeVideoBtn.addEventListener('click', () => startSurpriseMatchmaking('video'));
+  }
+  if (DOM.surpriseModeTextBtn) {
+    DOM.surpriseModeTextBtn.addEventListener('click', () => startSurpriseMatchmaking('text'));
+  }
+
+  if (DOM.surpriseMingleNowBtn) {
+    DOM.surpriseMingleNowBtn.addEventListener('click', () => {
+      state.socket.emit('surprise:mingle_now', (res) => {
+        if (res?.success) {
+          sounds.playMingleConnect();
+          showToast('🎉 You mingled with your surprise partner!', 'success');
+          DOM.surpriseMingleNowBtn.textContent = '✓ MINGLED!';
+          DOM.surpriseMingleNowBtn.classList.add('bg-emerald-600');
+          loadHomeData();
+        }
+      });
     });
-  });
+  }
 
-  DOM.surpriseNextBtn.addEventListener('click', () => {
-    state.socket.emit('surprise:next');
-  });
+  if (DOM.surpriseNextBtn) DOM.surpriseNextBtn.addEventListener('click', skipSurpriseNext);
+  if (DOM.surpriseExitBtn) DOM.surpriseExitBtn.addEventListener('click', exitSurprise);
+  if (DOM.surpriseToggleMicBtn) DOM.surpriseToggleMicBtn.addEventListener('click', toggleSurpriseMic);
+  if (DOM.surpriseToggleCamBtn) DOM.surpriseToggleCamBtn.addEventListener('click', toggleSurpriseCam);
+  if (DOM.surpriseFlipCamBtn) DOM.surpriseFlipCamBtn.addEventListener('click', flipSurpriseCam);
 
-  DOM.surpriseExitBtn.addEventListener('click', () => {
-    state.socket.emit('surprise:leave');
-    switchSection('home');
-  });
-
-  DOM.cancelSurpriseSearchBtn.addEventListener('click', () => {
-    state.socket.emit('surprise:leave');
-    switchSection('home');
+  // Keyboard shortcut for Omegle Skip (Escape key)
+  document.addEventListener('keydown', (e) => {
+    if (state.activeSection === 'surprise' && e.key === 'Escape') {
+      skipSurpriseNext();
+    }
   });
 
   // Chat typing

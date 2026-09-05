@@ -258,10 +258,52 @@ async function runMingleTests() {
     });
   });
 
+  // Test 12: Omegle-Style Random Live Video Mingle (Surprise Video Matchmaking)
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Omegle Video Matchmaking Test timed out')), 6000);
+
+    let client1Matched = false;
+    let client2Matched = false;
+
+    client1.once('surprise:matched', (data1) => {
+      console.log(`✅ [Test 12A Passed] Sanjeevi matched in Omegle Video Mode with @${data1.partner.username} (Initiator: ${data1.isInitiator})`);
+      client1Matched = true;
+
+      // Sanjeevi sends WebRTC offer signal to stranger Alex
+      client1.emit('surprise:signal', {
+        signal: { offer: { type: 'offer', sdp: 'v=0\r\nomegle-test-sdp' } }
+      });
+    });
+
+    client2.once('surprise:matched', (data2) => {
+      console.log(`✅ [Test 12B Passed] Alex matched in Omegle Video Mode with @${data2.partner.username} (Initiator: ${data2.isInitiator})`);
+      client2Matched = true;
+    });
+
+    client2.once('surprise:signal', (signalData) => {
+      console.log(`✅ [Test 12C Passed] Alex received Omegle P2P video signal:`, signalData.signal.offer ? 'SDP Offer' : 'Other');
+
+      // Test Omegle Instant Skip (Next)
+      client1.emit('surprise:next', { mode: 'video' });
+    });
+
+    client2.once('surprise:partner-left', (leftData) => {
+      console.log(`✅ [Test 12D Passed] Alex notified of stranger skip: "${leftData.message}"`);
+      clearTimeout(timeout);
+      resolve();
+    });
+
+    // Client 2 enters Omegle Video Queue first
+    client2.emit('surprise:find', { mode: 'video' }, (res2) => {
+      // Client 1 enters Omegle Video Queue and matches
+      client1.emit('surprise:find', { mode: 'video' });
+    });
+  });
+
   client1.disconnect();
   client2.disconnect();
 
-  console.log('\n🎉 ALL 11 MINGLE PLATFORM TESTS PASSED! WebRTC Live Video Calling, Password auth, Instagram-style photo uploads, discovery, social graph, chat, and surprise mingle are fully operational.');
+  console.log('\n🎉 ALL 12 MINGLE PLATFORM TESTS PASSED! Omegle-style Random Live Video Chat, WebRTC 1-on-1 calls, Password auth, Discovery, and Social Graph are fully operational.');
   process.exit(0);
 }
 

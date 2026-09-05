@@ -567,81 +567,146 @@
       </section>
 
       <!-- ================= 6. SURPRISE MINGLE SECTION ================= -->
-      <section id="sectionSurprisePane" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-white">
-        <header class="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shrink-0">
+      <!-- ================= 6. SURPRISE MINGLE (OMEGLE STYLE RANDOM LIVE VIDEO & TEXT) ================= -->
+      <section id="sectionSurprisePane" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-gray-950 text-white">
+        
+        <!-- Omegle Header & Controls -->
+        <header class="h-16 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between bg-gray-900/90 backdrop-blur-md shrink-0 z-20">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-2xl bg-rose-50 text-[#FF5A5F] flex items-center justify-center font-bold text-lg">
-              🎲
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#FF5A5F] to-[#9B51E0] text-white flex items-center justify-center font-bold text-base shadow-lg shadow-coral-500/20">
+              📹
             </div>
             <div>
-              <h2 id="surpriseHeaderTitle" class="text-sm font-bold text-gray-900">Surprise Mingle</h2>
-              <p id="surpriseHeaderSubtitle" class="text-[11px] text-gray-500">Connecting you with an active user</p>
+              <div class="flex items-center gap-2">
+                <h2 id="surpriseHeaderTitle" class="text-sm font-bold text-white leading-tight">Live Video Mingle</h2>
+                <span id="surpriseLivePill" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-[#FF5A5F] border border-rose-500/30 animate-pulse">● LIVE OMEGLE</span>
+              </div>
+              <p id="surpriseHeaderSubtitle" class="text-[10px] text-gray-400">Random 1-on-1 instant video matching</p>
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button id="surpriseMingleNowBtn" class="hidden px-4 py-2 rounded-xl btn-coral text-white text-xs font-bold shadow transition">
-              + CONNECT WITH MATCH
+          <!-- Mode Switcher & Top Actions -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <!-- Mode Toggle Tabs -->
+            <div class="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-bold">
+              <button id="surpriseModeVideoBtn" class="px-3 py-1 rounded-lg bg-[#FF5A5F] text-white transition flex items-center gap-1">
+                <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Video</span>
+              </button>
+              <button id="surpriseModeTextBtn" class="px-3 py-1 rounded-lg text-gray-400 hover:text-white transition flex items-center gap-1">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Text</span>
+              </button>
+            </div>
+
+            <!-- Connect / Mingle Now Button -->
+            <button id="surpriseMingleNowBtn" class="hidden px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-500/30 transition flex items-center gap-1.5">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>+ MINGLE</span>
             </button>
-            <button id="surpriseNextBtn" class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition">
-              <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
-              <span>Next</span>
+
+            <!-- Instant Next (Skip) Button -->
+            <button id="surpriseNextBtn" class="px-4 py-1.5 rounded-xl btn-coral text-white text-xs font-bold shadow-lg shadow-coral-500/30 flex items-center gap-1.5 transition transform active:scale-95" title="Skip to next stranger (Esc)">
+              <i data-lucide="skip-forward" class="w-4 h-4"></i>
+              <span>NEXT</span>
             </button>
-            <button id="surpriseExitBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition">
-              Exit
+
+            <!-- Exit Button -->
+            <button id="surpriseExitBtn" class="p-2 bg-white/10 hover:bg-rose-500/20 hover:text-rose-400 text-gray-300 rounded-xl transition" title="Exit to Home">
+              <i data-lucide="x" class="w-4 h-4"></i>
             </button>
           </div>
         </header>
 
-        <!-- A. Surprise Radar Searching State -->
-        <div id="surpriseRadarState" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#F8F9FB]">
-          <div class="relative w-36 h-36 flex items-center justify-center mb-6">
-            <div class="absolute inset-0 rounded-full border-2 border-rose-300 animate-ping opacity-50"></div>
-            <div class="absolute inset-4 rounded-full border-2 border-rose-400 animate-pulse opacity-60"></div>
-            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF5A5F] to-[#FF3366] flex items-center justify-center shadow-xl shadow-coral-500/40 text-3xl">
-              🎲
-            </div>
-          </div>
-          <h3 class="text-xl font-extrabold text-gray-900 mb-1">Looking for someone to Mingle...</h3>
-          <p class="text-xs text-gray-500 max-w-sm mb-6">Finding an online match right now.</p>
-          <button id="cancelSurpriseSearchBtn" class="px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 shadow-sm transition">
-            Cancel Search
-          </button>
-        </div>
+        <!-- Main Omegle Stage (Split Video + Chat Pane) -->
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+          
+          <!-- LEFT: VIDEO STREAMS STAGE -->
+          <div id="surpriseVideoStage" class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:p-4 relative bg-gray-950 overflow-hidden">
+            
+            <!-- 1. STRANGER'S VIDEO BOX (TOP/LEFT) -->
+            <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gray-900 border border-white/10 shadow-2xl flex items-center justify-center min-h-[220px] sm:min-h-0">
+              <video id="surpriseStrangerVideo" autoplay playsinline class="w-full h-full object-cover bg-gray-900"></video>
+              <audio id="surpriseStrangerAudio" autoplay></audio>
 
-        <!-- B. Surprise Active Chat State -->
-        <div id="surpriseActiveChatState" class="hidden flex-1 flex flex-col h-full overflow-hidden">
-          <div class="p-3.5 bg-rose-50/50 border-b border-rose-100 flex items-center justify-between px-6">
-            <div class="flex items-center gap-3">
-              <img id="surprisePartnerAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=surprise" class="w-9 h-9 rounded-full bg-white border border-gray-200">
-              <div>
-                <p class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                  <span id="surprisePartnerName">Stranger</span>
-                  <span class="text-[10px] text-gray-400 font-mono" id="surprisePartnerUsername">@username</span>
-                </p>
-                <p id="surprisePartnerBio" class="text-[10px] text-[#FF5A5F] font-medium">Connected via Surprise Mingle</p>
+              <!-- Stranger Info Badge -->
+              <div id="surpriseStrangerBadge" class="hidden absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 z-10">
+                <img id="surpriseStrangerAvatar" src="" class="w-5 h-5 rounded-full object-cover">
+                <span id="surpriseStrangerName" class="text-xs font-bold text-white">Stranger</span>
+                <span id="surpriseStrangerUsername" class="text-[10px] text-gray-400 font-mono">@username</span>
+              </div>
+
+              <!-- Stranger Radar Searching / Connecting Placeholder -->
+              <div id="surpriseStrangerRadar" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/95 p-6 text-center z-10">
+                <div class="relative w-24 h-24 flex items-center justify-center mb-4">
+                  <div class="absolute inset-0 rounded-full border-2 border-rose-500/30 animate-ping"></div>
+                  <div class="absolute inset-2 rounded-full border border-rose-400/40 animate-pulse"></div>
+                  <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-[#FF5A5F] to-[#9B51E0] flex items-center justify-center text-2xl shadow-xl shadow-rose-500/40">
+                    🎲
+                  </div>
+                </div>
+                <h3 id="surpriseRadarTitle" class="text-base font-bold text-white mb-1">Searching for next stranger...</h3>
+                <p id="surpriseRadarSubtitle" class="text-xs text-gray-400 max-w-xs">Looking for an online user with camera ready.</p>
+                <p class="text-[10px] text-gray-500 mt-3 font-mono">Press NEXT or Space to skip</p>
               </div>
             </div>
-            <span class="text-[10px] text-[#FF5A5F] bg-white border border-rose-200 px-2.5 py-0.5 rounded-full font-bold">✨ LIVE MATCH</span>
+
+            <!-- 2. MY CAMERA VIDEO BOX (BOTTOM/RIGHT) -->
+            <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gray-900 border border-white/10 shadow-2xl flex items-center justify-center min-h-[220px] sm:min-h-0">
+              <video id="surpriseMyVideo" autoplay playsinline muted class="w-full h-full object-cover mirror-mode bg-gray-900"></video>
+              
+              <!-- My Camera Controls Bar -->
+              <div class="absolute bottom-3 inset-x-3 flex items-center justify-between z-10">
+                <span class="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">You</span>
+                
+                <div class="flex items-center gap-1.5">
+                  <button id="surpriseToggleMicBtn" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition" title="Toggle Mic">
+                    <i id="surpriseMicIcon" data-lucide="mic" class="w-4 h-4"></i>
+                  </button>
+                  <button id="surpriseToggleCamBtn" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition" title="Toggle Camera">
+                    <i id="surpriseCamIcon" data-lucide="video" class="w-4 h-4"></i>
+                  </button>
+                  <button id="surpriseFlipCamBtn" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition" title="Flip Camera">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- My Camera Off Placeholder -->
+              <div id="surpriseMyCamOffOverlay" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 text-gray-400 text-xs font-bold">
+                Camera Disabled
+              </div>
+            </div>
+
           </div>
 
-          <div id="surpriseMessagesStream" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3.5 bg-[#F8F9FB] custom-scrollbar"></div>
+          <!-- RIGHT: LIVE TEXT CHAT OVERLAY / DRAWER -->
+          <div id="surpriseChatDrawer" class="w-full lg:w-80 h-48 sm:h-64 lg:h-auto flex flex-col bg-gray-900 border-t lg:border-t-0 lg:border-l border-white/10 shrink-0">
+            <!-- Chat Stream -->
+            <div id="surpriseMessagesStream" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 text-xs custom-scrollbar">
+              <div class="text-center text-[11px] text-gray-500 py-2">
+                Say hi to your stranger! Be polite & have fun. ✨
+              </div>
+            </div>
 
-          <div id="surpriseTypingStrip" class="px-6 py-1 text-xs text-[#FF5A5F] font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-6 shrink-0 bg-[#F8F9FB]">
-            <span class="w-1.5 h-1.5 bg-[#FF5A5F] rounded-full animate-bounce"></span>
-            <span>Partner is typing...</span>
-          </div>
+            <!-- Typing indicator -->
+            <div id="surpriseTypingStrip" class="px-4 py-1 text-[11px] text-[#FF5A5F] font-medium italic flex items-center gap-2 opacity-0 transition-opacity duration-200 h-5 shrink-0 bg-gray-900">
+              <span class="w-1 h-1 bg-[#FF5A5F] rounded-full animate-bounce"></span>
+              <span>Stranger is typing...</span>
+            </div>
 
-          <div class="p-3 md:px-6 bg-white border-t border-gray-200 shrink-0">
-            <form id="surpriseChatForm" class="flex items-center gap-2">
-              <input type="text" id="surpriseTextInput" autocomplete="off" placeholder="Say hello to your match..."
-                class="flex-1 py-3 px-4 bg-[#F3F4F7] border border-transparent focus:border-[#FF5A5F] focus:bg-white rounded-full outline-none text-xs sm:text-sm text-gray-900 placeholder-gray-400 font-medium transition">
-              <button type="submit" class="p-3 btn-coral text-white rounded-full shadow-md flex items-center justify-center shrink-0">
-                <i data-lucide="send" class="w-4 h-4 stroke-[2.5]"></i>
+            <!-- Message Form -->
+            <form id="surpriseChatForm" class="p-2.5 bg-gray-950 border-t border-white/10 flex items-center gap-2 shrink-0">
+              <input type="text" id="surpriseTextInput" autocomplete="off" placeholder="Type a message..."
+                class="flex-1 py-2 px-3.5 bg-white/10 border border-white/10 focus:border-[#FF5A5F] focus:bg-white/15 rounded-xl outline-none text-xs text-white placeholder-gray-500 font-medium transition">
+              <button type="submit" class="p-2 btn-coral text-white rounded-xl shadow flex items-center justify-center shrink-0">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
               </button>
             </form>
           </div>
+
         </div>
+
       </section>
 
     </main>
